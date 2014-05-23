@@ -138,7 +138,10 @@
 #include <sstream>
 #include <string.h>
 
+#include <iostream>
+
 #include "OTCommon.hpp"
+
 
 #ifdef _WIN32
 #include "win32_utf8conv.hpp"  // support for changig between std::string and std::wstring
@@ -316,6 +319,8 @@ class OTString
 {
    // Construction -- Destruction
 public:
+	typedef enum { eDebug } tDebug;
+
 EXPORT	OTString();
 EXPORT	OTString(const OTString & strValue);
 EXPORT	OTString(const OTASCIIArmor & strValue);
@@ -324,6 +329,7 @@ EXPORT	OTString(const OTContract & theValue);
 EXPORT	OTString(const OTIdentifier & theValue);
         OTString(OTPseudonym & theValue);
 EXPORT	OTString(const char * new_string);
+				OTString(const char * new_string, tDebug debug, const std::string &msg);
         OTString(const char * new_string, size_t sizeLength);
 EXPORT	OTString(const std::string & new_string);
 EXPORT	virtual ~OTString();

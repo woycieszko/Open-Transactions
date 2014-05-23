@@ -217,7 +217,7 @@ OTSettings OTPaths::s_settings(GlobalConfigFile()); // NOTE: This is BAD to call
 OTString OTPaths::s_strAppBinaryFolder("");
 OTString OTPaths::s_strHomeFolder("");
 OTString OTPaths::s_strAppDataFolder("");
-OTString OTPaths::s_strGlobalConfigFile("");
+OTString OTPaths::s_strGlobalConfigFile("" , OTString::eDebug, "Now running constructor for s_strGlobalConfigFile");
 OTString OTPaths::s_strPrefixFolder("");
 OTString OTPaths::s_strScriptsFolder("");
 
@@ -282,7 +282,11 @@ const OTString & OTPaths::AppDataFolder()
 
 const OTString & OTPaths::GlobalConfigFile()
 {
-    if (s_strGlobalConfigFile.Exists()) return s_strGlobalConfigFile;  //got it, lets return it.
+    if (s_strGlobalConfigFile.Exists()) {
+			std::cout << "GlobalConfigFile() - just returning reference s_strGlobalConfigFile="<<(void*)(&s_strGlobalConfigFile)
+			<< "='" << s_strGlobalConfigFile.Get()<<"'" << std::endl;
+			return s_strGlobalConfigFile;  //got it, lets return it.
+		}
 
     OTString strGlobalConfigFile("");
 
@@ -290,6 +294,8 @@ const OTString & OTPaths::GlobalConfigFile()
     if(!AppendFile(strGlobalConfigFile,AppDataFolder(),OT_INIT_CONFIG_FILENAME)) OT_FAIL;
 
     s_strGlobalConfigFile = strGlobalConfigFile;
+		std::cout << "GlobalConfigFile() - SET and now returning reference s_strGlobalConfigFile="<<(void*)(&s_strGlobalConfigFile)
+			<< "='" << s_strGlobalConfigFile.Get()<<"'" << std::endl;
 
     return s_strGlobalConfigFile;
 }

@@ -19,6 +19,15 @@ void breakme() {
 	printf("breakpoint is here.\n");
 }
 
+class cTest {
+	public:
+		int *i;
+		cTest() { i=new int(42); }
+		~cTest() { delete i; i=NULL; }
+};
+
+cTest testobj;
+
 int main(int argc, const char **argv) {
 
 	int ret=0;
