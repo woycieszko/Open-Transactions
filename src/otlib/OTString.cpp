@@ -878,7 +878,7 @@ OTString::OTString(const char * new_string) : m_lLength(0), m_lPosition(0), m_st
 }
 
 
-OTString::OTString(const char * new_string, tDebug debug, const std::string &msg);
+OTString::OTString(const char * new_string, tDebug debug, const std::string &msg)
 : m_lLength(0), m_lPosition(0), m_strBuffer(NULL)
 {
 //	Initialize();
@@ -910,8 +910,8 @@ OTString::OTString(const std::string& new_string) : m_lLength(0), m_lPosition(0)
 char *str_dup2(const char *str, uint32_t length) // length doesn't/shouldn't include the byte for the terminating 0.
 {
 	char * str_new = new char [length + 1]; // CREATE EXTRA BYTE OF SPACE FOR \0 (NOT PART OF LENGTH)
-	std::cout << "str_dup2 
-		<< "from str("<<(void*)str<<")='"<<str<<"'
+	std::cout << "str_dup2 "
+		<< "from str("<<(void*)str<<")='"<<str<<"'"
 		<< "to str_new("<<(void*)str_new<<")" << std::endl;
 	OT_ASSERT(NULL != str_new);
 	
@@ -966,7 +966,7 @@ void OTString::LowLevelSetStr(const OTString & strBuf)
 //
 void OTString::LowLevelSet(const char * new_string, uint32_t nEnforcedMaxLength)
 {
-	std::cout << "LowLevelSet for new_string="<<new_string<<endl;
+	std::cout << "LowLevelSet for new_string="<<new_string<<std::endl;
 
 	OT_ASSERT(NULL == m_strBuffer); // otherwise memory leak.
 	

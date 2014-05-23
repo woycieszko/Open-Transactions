@@ -1,0 +1,56 @@
+
+This is just a tiny document to write down SOME of things to-do for benefit of github,
+e.g. currently debugged problem.
+
+Look in other places (online?) for the official OpenTransactions todo/bugs list (which this file is NOT).
+
+
+
+=== Mem leak in OTString ===
+
+bad since before 80c53f70d935c38de238e9d4d99887e55d4bed6d seen in src/otcli
+when runnin ./othin even with empty main(){} manifests as:
+
+valgrind ./othint  --leak-check=full 
+
+
+breakpoint is here.
+Skipping over disabled destructor here
+==16802== 
+==16802== HEAP SUMMARY:
+==16802==     in use at exit: 65 bytes in 4 blocks
+==16802==   total heap usage: 1,826 allocs, 1,822 frees, 95,173 bytes allocated
+==16802== 
+==16802== 19 bytes in 1 blocks are definitely lost in loss record 3 of 4
+==16802==    at 0x4C28147: operator new[](unsigned long) (vg_replace_malloc.c:348)
+==16802==    by 0x59575DE: OTString::LowLevelSetStr(OTString const&) (OTString.cpp:899)
+==16802==    by 0x578757C: OTPaths::AppDataFolder() (OTPaths.cpp:277)
+==16802==    by 0x57872FA: OTPaths::GlobalConfigFile() (OTPaths.cpp:290)
+==16802==    by 0x56E60DD: global constructors keyed to a (OTPaths.cpp:214)
+==16802==    by 0x400DF7F: call_init (dl-init.c:85)
+==16802==    by 0x400E076: _dl_init (dl-init.c:134)
+==16802==    by 0x4000B29: ??? (in /lib/x86_64-linux-gnu/ld-2.13.so)
+==16802== 
+==16802== 30 bytes in 1 blocks are definitely lost in loss record 4 of 4
+==16802==    at 0x4C28147: operator new[](unsigned long) (vg_replace_malloc.c:348)
+==16802==    by 0x59575DE: OTString::LowLevelSetStr(OTString const&) (OTString.cpp:899)
+==16802==    by 0x578733A: OTPaths::GlobalConfigFile() (OTPaths.cpp:292)
+==16802==    by 0x56E60DD: global constructors keyed to a (OTPaths.cpp:214)
+==16802==    by 0x400DF7F: call_init (dl-init.c:85)
+==16802==    by 0x400E076: _dl_init (dl-init.c:134)
+==16802==    by 0x4000B29: ??? (in /lib/x86_64-linux-gnu/ld-2.13.so)
+==16802== 
+==16802== LEAK SUMMARY:
+==16802==    definitely lost: 49 bytes in 2 blocks
+==16802==    indirectly lost: 0 bytes in 0 blocks
+==16802==      possibly lost: 0 bytes in 0 blocks
+==16802==    still reachable: 16 bytes in 2 blocks
+==16802==         suppressed: 0 bytes in 0 blocks
+==16802== Reachable blocks (those to which a pointer was found) are not shown.
+==16802== To see them, rerun with: --leak-check=full --show-reachable=yes
+==16802== 
+==16802== For counts of detected and suppressed errors, rerun with: -v
+==16802== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 4 from 4)
+
+
+
