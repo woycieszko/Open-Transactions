@@ -230,7 +230,7 @@ void cCmdParser::Init() {
 				_note(" to " << to << " subj=" << subj << " prio="<<prio);
 				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
 					for(auto cc : data->OptIf("cc")) _note("--cc to " << cc);
-					use.MsgSend( data->Var(1), data->VarDef(2,"no_subject") );
+					use.MsgSend( use.NymGetDefault(), data->Var(1), data->VarDef(2,"no_subject") );
 				return 0;
 			}
 		);
