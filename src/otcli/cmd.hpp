@@ -28,6 +28,7 @@ class cCmdExecutable;
 
 class cCmdParser_pimpl;
 
+// ============================================================================
 
 struct cErrParse : public std::runtime_error { cErrParse(const string &s) : runtime_error(s) { } };
 struct cErrParseName : public cErrParse { cErrParseName(const string &s) : cErrParse("name of command is unknown: "+s) { } };
@@ -38,6 +39,25 @@ struct cErrArgMissing : public cErrArgNotFound {
 	cErrArgMissing(const string &s) : cErrArgNotFound("Just missing : " + s) { } }; // more specificaly, the arg was not given, e.g. 3 out of 2
 struct cErrArgIllegal : public cErrArgNotFound { 
 	cErrArgIllegal(const string &s) : cErrArgNotFound("Illegal! : " + s) { } }; // more specificaly, such arg is illegal, e.g. number -1 or option name ""
+
+// ============================================================================
+
+/** 
+A function to be executed that will do some actuall OT call <- e.g. execute this on "ot msg ls"
+*/
+class cCmdExecutable {  MAKE_CLASS_NAME("cCmdExecutable");
+	public:
+		typedef int tExitCode;
+		typedef std::function< tExitCode ( shared_ptr<cCmdData> , nUse::cUseOT & ) > tFunc;
+	public:
+		const static cCmdExecutable::tExitCode sSuccess;
+	private:
+		tFunc mFunc;
+	public:
+		cCmdExecutable( tFunc func );
+
+		tExitCode operator()( shared_ptr<cCmdData> , nUse::cUseOT & use );
+};
 
 /**
 The parser (can be used many times), that should contain some tree of possible commands and format/validation/hint of each.
@@ -51,7 +71,8 @@ class cCmdParser : public enable_shared_from_this<cCmdParser> { MAKE_CLASS_NAME(
 			const vector<cParamInfo> &var,
 			const vector<cParamInfo> &varExt,
 			const map<string, cParamInfo> &opt,
-			const cCmdExecutable &exec);
+			const cCmdExecutable::tFunc &exec)
+			;
 
 	public:
 		cCmdParser();
@@ -87,23 +108,6 @@ class cCmdProcessing { MAKE_CLASS_NAME("cCmdProcessing");
 
 		vector<string> UseComplete(); 
 		void UseExecute();
-};
-
-/** 
-A function to be executed that will do some actuall OT call <- e.g. execute this on "ot msg ls"
-*/
-class cCmdExecutable {  MAKE_CLASS_NAME("cCmdExecutable");
-	public:
-		typedef int tExitCode;
-		typedef std::function< tExitCode ( shared_ptr<cCmdData> , nUse::cUseOT & ) > tFunc;
-	public:
-		const static cCmdExecutable::tExitCode sSuccess;
-	private:
-		tFunc mFunc;
-	public:
-		cCmdExecutable( tFunc func );
-
-		tExitCode operator()( shared_ptr<cCmdData> , nUse::cUseOT & use );
 };
 
 /**
