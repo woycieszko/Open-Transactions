@@ -24,6 +24,8 @@ class cCmdName;
 class cParamInfo;
 class cParamString;
 
+class cCmdExecutable;
+
 class cCmdParser_pimpl;
 
 
@@ -44,6 +46,12 @@ class cCmdParser : public enable_shared_from_this<cCmdParser> { MAKE_CLASS_NAME(
 	protected:
 		unique_ptr< cCmdParser_pimpl > mI;
 		void AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format);
+		void AddFormat(
+			const string &name, 
+			const vector<cParamInfo> &var,
+			const vector<cParamInfo> &varExt,
+			const map<string, cParamInfo> &opt,
+			const cCmdExecutable &exec);
 
 	public:
 		cCmdParser();
@@ -115,7 +123,7 @@ class cCmdFormat {  MAKE_CLASS_NAME("cCmdFormat");
 		friend class cCmdProcessing; // allow direct access (should be read-only!)
 
 	public:
-		cCmdFormat(cCmdExecutable exec, tVar var, tVar varExt, tOption opt);
+		cCmdFormat(const cCmdExecutable &exec, const tVar &var, const tVar &varExt, const tOption &opt);
 
 		cCmdExecutable getExec() const;
 
@@ -173,6 +181,7 @@ class cCmdData {  MAKE_CLASS_NAME("cCmdData");
 		bool IsOpt(const string &name) const throw(cErrArgIllegal); // --dryrun
 		
 	public: // aliases ; I hope it will be fully optimized out/elided (TODO if not then copy/paste code of above methods)
+	// public? compiler bug? would prefer to have it as private, but lambdas made in cCmdProcessing should access this fields
 		string v(int nr, const string &def="",  bool doThrow=0) const throw(cErrArgIllegal) { return VarDef(nr,def,doThrow); }
 		vector<string> o(const string& name) const throw(cErrArgIllegal)  { return OptIf(name); }
 		string o1(const string& name, const string &def="") const throw(cErrArgIllegal) { return Opt1If(name,def); }

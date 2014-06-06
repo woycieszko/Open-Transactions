@@ -38,6 +38,17 @@ void cCmdParser::AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format 
 	format->Debug();
 }
 
+void cCmdParser::AddFormat(
+			const string &name, 
+			const vector<cParamInfo> &var,
+			const vector<cParamInfo> &varExt,
+			const map<string, cParamInfo> &opt,
+			const cCmdExecutable &exec)
+{
+	auto format = std::make_shared< cCmdFormat >( exec, var, varExt, opt );
+	AddFormat(name, format);
+}
+
 void cCmdParser::Init() {
 	_mark("Init tree");
 	/*
@@ -136,6 +147,19 @@ void cCmdParser::Init() {
 		}
 	);
 
+	cParamInfo pBool(
+		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
+			return true; // option's value should be null
+		} ,
+		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
+			return vector<string> { "" }; // this should be empty option, let's continue
+		}
+	);
+	// sendmoney alice gold 1000
+	// sendmsgto alice hi    --addmoney 1000 --addmoney 2000  
+	//           arg=1 arg=2           arg=3           arg=4
+	// TODO 
+
 	cParamInfo pMsgInIndex(
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			const int nr = curr_word_ix+1;
@@ -155,6 +179,23 @@ void cCmdParser::Init() {
 			return vector<string> { "" }; //TODO hinting function for msg index
 		}
 	);
+
+	// ===========================================================================
+
+	using namespace nOper; // vector + is available inside lambdas
+	using std::stoi;
+	typedef cCmdFormat::tVar tVar;
+	typedef cCmdFormat::tOption tOpt;
+
+	{ // FORMAT: msg sendfrom
+		cCmdExecutable exec( 
+			[] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d; 
+			return U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); } );
+		AddFormat("msg sendfrom", vector<cParamInfo>{pNymFrom, pNymTo}, vector<cParamInfo>{pSubject,pSubject},
+			map<string, cParamInfo> { {"--dryrun",pBool} , {"--cc",pNymAny} , {"--bcc",pNymAny} , {"--prio",pOnceInt} },
+			exec
+		);
+	}
 
 
 //	Prepare format for all msg commands:
@@ -190,32 +231,6 @@ void cCmdParser::Init() {
 		AddFormat( cCmdName("msg ls") , format );
 	}
 
-	using namespace nOper; // vector + is available inside lambdas
-	using std::stoi;
-	typedef cCmdFormat::tVar tVar;
-	typedef cCmdFormat::tOption tOpt;
-
-	{ // FORMAT: msg sendfrom
-		// ot msg sendfrom alice bob subj
-		// ot msg sendfrom NYM_FROM NYM_TO SUBJ
-		cCmdExecutable exec( [] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d; 
-			return U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); } );
-		tVar var;
-			var.push_back( pNymFrom );
-			var.push_back( pNymTo );
-		tVar varExt;
-			varExt.push_back( pSubject );
-			varExt.push_back( pSubject );
-		tOpt opt;
-			opt.insert(std::make_pair("--dryrun" , pNymAny)); // TODO should be global option
-			opt.insert(std::make_pair("--cc" , pNymAny));
-			opt.insert(std::make_pair("--bcc" , pNymAny));
-			opt.insert(std::make_pair("--prio" , pOnceInt));
-
-		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
-		AddFormat( cCmdName("msg sendfrom") , format );
-	}
-	
 	{ // FORMAT: msg sendto
 		// ot msg sendto bob subj
 		// ot msg sendto NYM_TO SUBJ
@@ -1025,7 +1040,8 @@ cParamInfo::cParamInfo(tFuncValid valid, tFuncHint hint)
 
 // ========================================================================================================================
 
-cCmdFormat::cCmdFormat(cCmdExecutable exec, tVar var, tVar varExt, tOption opt) 
+// cCmdFormat::cCmdFormat(cCmdExecutable exec, tVar var, tVar varExt, tOption opt) 
+cCmdFormat::cCmdFormat(const cCmdExecutable &exec, const tVar &var, const tVar &varExt, const tOption &opt)
 	:	mExec(exec), mVar(var), mVarExt(varExt), mOption(opt)
 {
 	_dbg1("Created new format");
