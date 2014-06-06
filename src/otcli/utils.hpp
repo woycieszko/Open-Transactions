@@ -229,8 +229,22 @@ vector<T> operator+(const vector<T> &a, const vector<T> &b) {
 }
 
 template <class T>
-vector<T> & operator+=(vector<T> &a, const vector<T> &b) {
-	return a.insert( a.end() , b.begin(), b.end() );
+vector<T> operator+(const T &a, const vector<T> &b) {
+	vector<T> ret(1,a);
+	ret.insert( ret.end() , b.begin(), b.end() );
+	return ret;
+}
+
+template <class T>
+vector<T> operator+(const vector<T> &a, const T &b) {
+	vector<T> b_vector(1,a);
+	return a + b_vector;
+}
+
+template <class T>
+vector<T>& operator+=(vector<T> &a, const vector<T> &b) {
+	a.insert( a.end() , b.begin(), b.end() );
+	return a;
 }
 
 } // nOT::nUtils::nOper

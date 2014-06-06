@@ -388,7 +388,7 @@ const vector<string> cUseOT::MsgGetForNym(const string & nymName) { ///< Get all
 }
 
 void cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
-	_note("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
+	_fact("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
 	if (dryrun) return;
 
 	if(!Init())

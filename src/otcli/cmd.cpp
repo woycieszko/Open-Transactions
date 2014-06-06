@@ -190,18 +190,16 @@ void cCmdParser::Init() {
 		AddFormat( cCmdName("msg ls") , format );
 	}
 
+	using namespace nOper; // vector + is available inside lambdas
+	using std::stoi;
+
 	{ // FORMAT: msg sendfrom
 		// ot msg sendfrom alice bob subj
 		// ot msg sendfrom NYM_FROM NYM_TO SUBJ
-		cCmdExecutable exec(
-			[] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d;
-				vector<string> to(1,D.Var(2)); for(auto r:D.OptIf("cc")) to.push_back(r);
-				string msg=D.VarDef(3);
-				U.MsgSend(D.Var(1), to, msg, D.VarDef(4,"nosubject"), std::stoi(D.Opt1If("--prio","0")), D.IsOpt("--dryrun"));
-				// void MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun);
-				return 0;
-			}
-		);
+		cCmdExecutable exec( 
+			[] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d; 
+			/*
+			U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); */return true; 	} );
 		cCmdFormat::tVar var;
 			var.push_back( pNymFrom );
 			var.push_back( pNymTo );
@@ -989,8 +987,8 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 	auto alltest = vector<string>{ ""
 //	"ot msg ls"
 //	,"ot msg ls alice"
-	,"ot msg sendfrom alice bob --prio 1"
-	,"ot msg sendfrom alice bob hello --cc eve --cc mark --bcc john --prio 4"
+	//,"ot msg sendfrom alice bob --prio 1"
+	,"ot msg sendfrom alice bob hello --cc eve --cc mark --bcc john --prio 4 --dryrun"
 //	,"ot msg sendto bob hello --cc eve --cc mark --bcc john --prio 4"
 //	,"ot msg rm alice 0"
 //	,"ot msg-out rm alice 0"
