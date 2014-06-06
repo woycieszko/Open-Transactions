@@ -388,34 +388,44 @@ const vector<string> cUseOT::MsgGetForNym(const string & nymName) { ///< Get all
 }
 
 bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
-	_note("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
+	_fact("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
 	if (dryrun) return false;
 
 	if(!Init())
 			return false;
+	if ( msg.empty() ) {
+		nUtils::cEnvUtils envUtils;
+		string filename = envUtils.GetTmpTextFile();
+		string command = "vim " + filename;
+		system( command.c_str() );
 
-		OT_ME madeEasy;
+		std::ifstream ifs(filename);
+		std::string input((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+		_mark("Multiline text: " + input);
+	}
 
-		ID senderID = NymGetId(nymSender);
-		vector<ID> recipientID;
-		for (auto varName : nymRecipient)
-			recipientID.push_back( NymGetId(varName) );
+	OT_ME madeEasy;
 
-		for (auto varID : recipientID) {
-			_dbg1("Sending message from" + senderID + "to" + varID );
+	ID senderID = NymGetId(nymSender);
+	vector<ID> recipientID;
+	for (auto varName : nymRecipient)
+		recipientID.push_back( NymGetId(varName) );
 
-			string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), senderID, varID, msg);
+	for (auto varID : recipientID) {
+		_dbg1("Sending message from" + senderID + "to" + varID );
 
-			// -1 error, 0 failure, 1 success.
-			if (1 != madeEasy.VerifyMessageSuccess(strResponse))
-			{
-				_erro("Failed trying to send the message");
-				return false;
-			}
-			_dbg3("Message was sent successfully.");
+		string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), senderID, varID, msg);
+
+		// -1 error, 0 failure, 1 success.
+		if (1 != madeEasy.VerifyMessageSuccess(strResponse))
+		{
+			_erro("Failed trying to send the message");
+			return false;
 		}
-		_info("All messages were sent successfully.");
-		return true;
+		_dbg3("Message was sent successfully.");
+	}
+	_info("All messages were sent successfully.");
+	return true;
 }
 
 bool cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, const string & msg) { ///< Send message from Nym1 to Nym2

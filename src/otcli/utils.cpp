@@ -302,6 +302,26 @@ void cConfigManager::Save(const string & fileName, const map<string, string> & c
 
 cConfigManager configManager;
 
+#ifdef __unix
+
+const string cEnvUtils::GetTmpTextFile() {
+	char filename[] = "/tmp/otcli_text.XXXXXX";
+	fd = mkstemp(filename);
+	if (fd == -1) {
+		_erro("Can't create the file: " << filename);
+		return "";
+	}
+	string filenameStr = filename;
+	return filenameStr;
+}
+
+void cEnvUtils::CloseFile(const string & filename) {
+	close(fd);
+	unlink( filename.c_str() );
+}
+
+#endif
+
 }; // namespace nUtil
 
 

@@ -8,6 +8,9 @@ we find helpful in coding this project.
 #define INCLUDE_OT_NEWCLI_UTILS
 
 #include "lib_common1.hpp"
+#ifdef __unix
+	#include <unistd.h>
+#endif
 
 #ifndef CFG_WITH_TERMCOLORS
 	#error "You requested to turn off terminal colors (CFG_WITH_TERMCOLORS), however currently they are hardcoded (this option to turn them off is not yet implemented)."
@@ -214,7 +217,10 @@ extern cConfigManager configManager;
 
 //TODO class cEnvUtils -> opening editor for multiline text input
 class cEnvUtils {
-
+	int fd;
+public:
+	const string GetTmpTextFile();
+	void CloseFile(const string & filename);
 };
 // ====================================================================
 
