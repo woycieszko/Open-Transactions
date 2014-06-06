@@ -366,7 +366,7 @@ void cCmdParser::Init() {
 		cCmdFormat::tVar var;
 			var.push_back( pNym );
 		cCmdFormat::tVar varExt;
-			var.push_back( pServer );
+			varExt.push_back( pServer );
 		cCmdFormat::tOption opt;
 
 		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
@@ -616,6 +616,182 @@ void cCmdParser::Init() {
 		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
 		AddFormat( cCmdName("account mv") , format );
 	}
+
+	//	,"ot asset new"
+	//	,"ot asset issue"
+	//	,"ot asset ls"
+
+	{ // FORMAT: asset ls
+		// ot asset ls
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				_note("ls asset");
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				nUtils::DisplayVector( cout, use.AssetGetAllNames() );
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+		cCmdFormat::tVar varExt;
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("asset ls") , format );
+	}
+
+	{ // FORMAT: asset issue
+		// ot asset issue
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				string server = data->VarDef( 1, use.ServerGetDefault() );
+				string nym = data->VarDef( 2, use.NymGetDefault() );
+				string contract; // TODO get multiline contract
+				_note("Issue asset by nym=" << nym << " on server=" << server);
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				use.AssetIssue(server, nym, contract);
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+		cCmdFormat::tVar varExt;
+			varExt.push_back( pServer );
+			varExt.push_back( pNym );
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("asset issue") , format );
+	}
+
+	{ // FORMAT: asset new
+		// ot asset new
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				string nym = data->VarDef( 1, use.NymGetDefault() );
+				string xmlContents; // TODO get multiline xml
+				_note("new asset");
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				use.AssetNew(nym, xmlContents);
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+		cCmdFormat::tVar varExt;
+			varExt.push_back( pNym );
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("asset new") , format );
+	}
+
+	//	,"ot server add"
+	//	,"ot server ls"
+	//	,"ot server new"
+	//	,"ot server rm servername"
+	//	,"ot server set-default servername"
+
+	{ // FORMAT: server ls
+		// ot server ls
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				_note("ls server");
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				nUtils::DisplayVector( cout, use.ServerGetAllNames() );
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+		cCmdFormat::tVar varExt;
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("server ls") , format );
+	}
+
+	{ // FORMAT: server add
+		// ot server add
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				string contract; //TODO get multiline contract
+				_note("add server");
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				use.ServerAdd(contract);
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+		cCmdFormat::tVar varExt;
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("server add") , format );
+	}
+
+	{ // FORMAT: server new TODO implement functionality
+		// ot server new
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				string contract; //TODO get multiline contract
+				_note("new server");
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				//use.Server(contract);
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+		cCmdFormat::tVar varExt;
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("server new") , format );
+	}
+
+	{ // FORMAT: server rm
+		// ot server rm
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				string server = data->Var(1); //TODO get multiline contract
+				_note("rm server");
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				use.ServerRemove(server);
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+			var.push_back( pServer );
+		cCmdFormat::tVar varExt;
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("server rm") , format );
+	}
+
+	{ // FORMAT: server set-default
+		// ot server set-default servername
+		// ot server set-default server
+		cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> data, nUse::cUseOT & use) -> cCmdExecutable::tExitCode {
+				string server = data->Var(1);
+				_note("Set default server=" << server);
+				if (data->IsOpt("dryrun")) _note("Option dryrun is set");
+				use.ServerSetDefault(server);
+				return 0;
+			}
+		);
+		cCmdFormat::tVar var;
+			var.push_back( pServer );
+		cCmdFormat::tVar varExt;
+		cCmdFormat::tOption opt;
+
+		auto format = std::make_shared< cCmdFormat >( exec , var, varExt, opt );
+		AddFormat( cCmdName("server set-default") , format );
+	}
+
+	// TODO multiline support before implementing this:
+	//	,"ot text encode texttoprocess"
+	//	,"ot text decode text"
+	//	,"ot text encrypt bob text"
+	//	,"ot text decrypt text"
+
 
 
 	//mI->tree.emplace( cCmdName("msg send") , msg_send_format );
@@ -1011,7 +1187,20 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 //	,"ot ls"
 //	,"ot mv accountname newaccountname"
 
+//	,"ot asset new"
+//	,"ot asset issue"
+//	,"ot asset ls"
 
+//	,"ot server add"
+//	,"ot server ls"
+//	,"ot server new"
+//	,"ot server rm servername"
+//	,"ot server set-default servername"
+
+//	,"ot text encode texttoprocess"
+//	,"ot text decode text"
+//	,"ot text encrypt bob text"
+//	,"ot text decrypt text"
 	};
 	for (auto cmd : alltest) {
 		if (!cmd.length()) continue;

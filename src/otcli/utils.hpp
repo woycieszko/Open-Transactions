@@ -266,6 +266,8 @@ const extern int _dbg_ignore; // the global _dbg_ignore, but local code (blocks,
 
 #define OT_CODE_STAMP ( nOT::nUtils::ToStr("[") + nOT::nUtils::DbgShortenCodeFileName(__FILE__) + nOT::nUtils::ToStr("+") + nOT::nUtils::ToStr(__LINE__) + nOT::nUtils::ToStr(" ") + (GetObjectName()) + nOT::nUtils::ToStr("::") + nOT::nUtils::ToStr(__FUNCTION__) + nOT::nUtils::ToStr("]"))
 
+//TODO class cEnvUtils -> opening editor for multiline text input
+
 
 #endif
 
