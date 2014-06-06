@@ -192,21 +192,21 @@ void cCmdParser::Init() {
 
 	using namespace nOper; // vector + is available inside lambdas
 	using std::stoi;
+	typedef cCmdFormat::tVar tVar;
+	typedef cCmdFormat::tOption tOpt;
 
 	{ // FORMAT: msg sendfrom
 		// ot msg sendfrom alice bob subj
 		// ot msg sendfrom NYM_FROM NYM_TO SUBJ
-		cCmdExecutable exec( 
-			[] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d; 
-			/*
-			U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); */return true; 	} );
-		cCmdFormat::tVar var;
+		cCmdExecutable exec( [] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d; 
+			return U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); } );
+		tVar var;
 			var.push_back( pNymFrom );
 			var.push_back( pNymTo );
-		cCmdFormat::tVar varExt;
+		tVar varExt;
 			varExt.push_back( pSubject );
 			varExt.push_back( pSubject );
-		cCmdFormat::tOption opt;
+		tOpt opt;
 			opt.insert(std::make_pair("--dryrun" , pNymAny)); // TODO should be global option
 			opt.insert(std::make_pair("--cc" , pNymAny));
 			opt.insert(std::make_pair("--bcc" , pNymAny));

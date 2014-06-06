@@ -171,7 +171,20 @@ class cCmdData {  MAKE_CLASS_NAME("cCmdData");
 		string Opt1(const string& name) const throw(cErrArgNotFound); // --prio 100 same but requires the 1st element
 		
 		bool IsOpt(const string &name) const throw(cErrArgIllegal); // --dryrun
+		
+	public: // aliases ; I hope it will be fully optimized out/elided (TODO if not then copy/paste code of above methods)
+		string v(int nr, const string &def="",  bool doThrow=0) const throw(cErrArgIllegal) { return VarDef(nr,def,doThrow); }
+		vector<string> o(const string& name) const throw(cErrArgIllegal)  { return OptIf(name); }
+		string o1(const string& name, const string &def="") const throw(cErrArgIllegal) { return Opt1If(name,def); }
 
+		string V(int nr) const throw(cErrArgNotFound) { return Var(nr); }
+		vector<string> O(const string& name) const throw(cErrArgNotFound) { return Opt(name); }
+		string O1(const string& name) const throw(cErrArgNotFound) { return Opt1(name); }
+		
+		bool has(const string &name) const throw(cErrArgIllegal) { return IsOpt(name); }
+
+
+	protected:
 		void AssertLegalOptName(const string & name) const throw(cErrArgIllegal); // used internally to catch programming errors e.g. in binding lambdas
 }; 
 
