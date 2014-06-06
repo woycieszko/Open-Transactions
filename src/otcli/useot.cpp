@@ -387,12 +387,12 @@ const vector<string> cUseOT::MsgGetForNym(const string & nymName) { ///< Get all
 	return vector<string> {};
 }
 
-void cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
-	_fact("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
-	if (dryrun) return;
+bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
+	_note("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
+	if (dryrun) return false;
 
 	if(!Init())
-			return;
+			return false;
 
 		OT_ME madeEasy;
 
@@ -410,23 +410,24 @@ void cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, cons
 			if (1 != madeEasy.VerifyMessageSuccess(strResponse))
 			{
 				_erro("Failed trying to send the message");
-				return;
+				return false;
 			}
 			_dbg3("Message was sent successfully.");
 		}
 		_info("All messages were sent successfully.");
+		return true;
 }
 
-void cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, const string & msg) { ///< Send message from Nym1 to Nym2
+bool cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, const string & msg) { ///< Send message from Nym1 to Nym2
 	_note("MsgSend " << nymSender << " to " << nymRecipient << " msg=" << msg);
 	
 	if(!Init())
-		return;
+		return false;
 
 	string subject = "";
 	int prio = 0;
 	bool dryrun = false;
-	MsgSend(nymSender, vector<string> {nymRecipient}, msg, subject, prio, dryrun);
+	return MsgSend(nymSender, vector<string> {nymRecipient}, msg, subject, prio, dryrun);
 }
 
 const bool cUseOT::MsgInCheckIndex(const string & nymName, const int32_t & nIndex) {

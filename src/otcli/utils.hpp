@@ -204,14 +204,18 @@ const bool checkPrefix(const string & str, char prefix = '^');
 // ====================================================================
 // operation on files
 
-class ConfigManager {
+class cConfigManager {
 public:
 	bool Load(const string & fileName, map<string, string> & configMap);
 	void Save(const string & fileName, const map<string, string> & configMap);
 };
 
-extern ConfigManager configManager;
+extern cConfigManager configManager;
 
+//TODO class cEnvUtils -> opening editor for multiline text input
+class cEnvUtils {
+
+};
 // ====================================================================
 
 namespace nOper { // nOT::nUtils::nOper
@@ -266,7 +270,7 @@ const extern int _dbg_ignore; // the global _dbg_ignore, but local code (blocks,
 
 #define OT_CODE_STAMP ( nOT::nUtils::ToStr("[") + nOT::nUtils::DbgShortenCodeFileName(__FILE__) + nOT::nUtils::ToStr("+") + nOT::nUtils::ToStr(__LINE__) + nOT::nUtils::ToStr(" ") + (GetObjectName()) + nOT::nUtils::ToStr("::") + nOT::nUtils::ToStr(__FUNCTION__) + nOT::nUtils::ToStr("]"))
 
-//TODO class cEnvUtils -> opening editor for multiline text input
+
 
 
 #endif

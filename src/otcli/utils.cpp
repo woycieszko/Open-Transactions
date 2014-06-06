@@ -263,7 +263,7 @@ const bool checkPrefix(const string & str, char prefix){
 // ====================================================================
 // operation on files
 
-bool ConfigManager::Load(const string & fileName, map<string, string> & configMap){
+bool cConfigManager::Load(const string & fileName, map<string, string> & configMap){
 	_dbg1("Loading defaults.");
 	std::ifstream inFile(fileName.c_str());
 	if( inFile.good() && !(inFile.peek() == std::ifstream::traits_type::eof()) ) {
@@ -287,7 +287,7 @@ bool ConfigManager::Load(const string & fileName, map<string, string> & configMa
 	return false;
 }
 
-void ConfigManager::Save(const string & fileName, const map<string, string> & configMap) {
+void cConfigManager::Save(const string & fileName, const map<string, string> & configMap) {
 	_dbg1("Will save config");
 	std::ofstream outFile(fileName.c_str());
 	for (auto pair : configMap) {
@@ -300,7 +300,7 @@ void ConfigManager::Save(const string & fileName, const map<string, string> & co
 	_dbg1("All saved");
 }
 
-ConfigManager configManager;
+cConfigManager configManager;
 
 }; // namespace nUtil
 
