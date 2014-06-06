@@ -185,6 +185,27 @@ void cCmdParser::Init() {
 	using namespace nOper; // vector + is available inside lambdas
 	using std::stoi;
 
+	typedef cCmdFormat::tVar tVar;
+	typedef cCmdFormat::tOption tOpt;
+
+	{ // FORMAT: msg sendfrom
+		cCmdExecutable exec( 
+			[] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d; 
+			return U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); } );
+		AddFormat("msg sendfrom", vector<cParamInfo>{pNymFrom, pNymTo}, vector<cParamInfo>{pSubject, pSubject},
+			map<string, cParamInfo> { {"--dryrun",pBool} , {"--cc",pNymAny} , {"--bcc",pNymAny} , {"--prio",pOnceInt} },
+			exec
+		);
+		//TODO modifications
+		/*cCmdExecutable exec(
+			[] ( shared_ptr<cCmdData> d, nUse::cUseOT & U) -> cCmdExecutable::tExitCode { auto &D=*d;
+			return U.MsgSend(D.V(1,"sender name"), D.V(2,"from name") + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); } );
+		AddFormat("msg sendfrom", vector<cParamInfo>{pNymFrom, pNymTo}, vector<cParamInfo>{pMsg+edit , pSubject+edit},
+			map<string, cParamInfo> { {"--dryrun",pBool} , {"--cc",pNymAny} , {"--bcc",pNymAny} , {"--prio",pOnceInt} },
+			exec
+		);*/
+	}
+
 	// types used in lambda header:
 	typedef shared_ptr<cCmdData> tData;
 	typedef nUse::cUseOT & tUse;
@@ -1184,7 +1205,7 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 //	"ot msg ls"
 //	,"ot msg ls alice"
 	//,"ot msg sendfrom alice bob --prio 1"
-	,"ot msg sendfrom alice bob hello --cc eve --cc mark --bcc john --prio 4 --dryrun"
+	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4 --dryrun"
 //	,"ot msg sendto bob hello --cc eve --cc mark --bcc john --prio 4"
 //	,"ot msg rm alice 0"
 //	,"ot msg-out rm alice 0"
