@@ -390,7 +390,31 @@ const vector<string> cUseOT::MsgGetForNym(const string & nymName) { ///< Get all
 void cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
 	_note("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
 	if (dryrun) return;
-	// TODO
+
+	if(!Init())
+			return;
+
+		OT_ME madeEasy;
+
+		ID senderID = NymGetId(nymSender);
+		vector<ID> recipientID;
+		for (auto varName : nymRecipient)
+			recipientID.push_back( NymGetId(varName) );
+
+		for (auto varID : recipientID) {
+			_dbg1("Sending message from" + senderID + "to" + varID );
+
+			string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), senderID, varID, msg);
+
+			// -1 error, 0 failure, 1 success.
+			if (1 != madeEasy.VerifyMessageSuccess(strResponse))
+			{
+				_erro("Failed trying to send the message");
+				return;
+			}
+			_dbg3("Message was sent successfully.");
+		}
+		_info("All messages were sent successfully.");
 }
 
 void cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, const string & msg) { ///< Send message from Nym1 to Nym2
@@ -399,56 +423,10 @@ void cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, cons
 	if(!Init())
 		return;
 
-	if ( !NymCheckIfExists(nymSender) ) {
-		_erro("Can't recognize sender name: " + nymSender);
-		return;
-	}
-	if ( !NymCheckIfExists(nymRecipient) ) {
-		_erro("Can't recognize recipient name: " + nymRecipient);
-		return;
-	}
-
-	OT_ME madeEasy;
-	string sender = NymGetId(nymSender);
-	string recipient = NymGetId(nymRecipient);
-
-	_dbg1("Sending message from" + sender + "to" + recipient );
-
-	string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), sender, recipient, msg);
-
-	// -1 error, 0 failure, 1 success.
-	if (1 != madeEasy.VerifyMessageSuccess(strResponse))
-	{
-		_erro("Failed trying to send the message");
-		return;
-	}
-
-	_info("Message was sent successfully.");
-}
-
-void cUseOT::MsgSend(const string & nymRecipient, const string & msg) { ///< Send message from default Nym to Nym2
-	if(!Init())
-		return;
-
-	if ( !NymCheckIfExists(nymRecipient) ) {
-		_erro("Can't recognize recipient name: " + nymRecipient);
-		return;
-	}
-
-	OT_ME madeEasy;
-	string recipient = NymGetId(nymRecipient);
-
-	_dbg1("Sending message from" + mDefaultIDs.at("UserID") + "to" + nymRecipient);
-
-	string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), recipient, msg);
-
-	// -1 error, 0 failure, 1 success.
-	if (1 != madeEasy.VerifyMessageSuccess(strResponse))
-	{
-		_erro("Failed trying to send the message");
-		return;
-	}
-	_info("Message was sent successfully.");
+	string subject = "";
+	int prio = 0;
+	bool dryrun = false;
+	MsgSend(nymSender, vector<string> {nymRecipient}, msg, subject, prio, dryrun);
 }
 
 const bool cUseOT::MsgInCheckIndex(const string & nymName, const int32_t & nIndex) {
