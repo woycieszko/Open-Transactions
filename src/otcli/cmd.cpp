@@ -35,7 +35,18 @@ cCmdExecutable::tExitCode Execute1( shared_ptr<cCmdData> , nUse::cUseOT ) {
 void cCmdParser::AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format ) {
 	mI->mTree.insert( cCmdParser_pimpl::tTreePair ( name , format ) );
 	_info("Add format for command name (" << (string)name << "), now size=" << mI->mTree.size() << " new format is: ");
-	format->Debug();
+	// format->Debug();
+}
+
+void cCmdParser::PrintUsage() {
+	auto & out = cerr;
+	for(auto element : mI->mTree) {
+		string name = element.first;
+		shared_ptr<cCmdFormat> format = element.second;
+		out << name << " : " ;
+		format->PrintUsageShort(out);
+		out << endl;
+	}
 }
 
 void cCmdParser::AddFormat(
@@ -199,6 +210,16 @@ void cCmdParser::Init() {
 	#define LAMBDA [] (tData d, tUse U) -> tExit
 
 	// ot msg
+
+	auto this_shared_do_not_use = shared_from_this(); // make_shared<cCmdProcessing>(this);
+	weak_ptr<cCmdParser> this_weak( this_shared_do_not_use );
+
+	AddFormat("msg help", {}, {}, {},
+		[this_weak] (tData d, tUse U) -> tExit { auto &D=*d; 
+			shared_ptr<cCmdParser> this_lock( this_weak );
+			this_lock->PrintUsage();
+			return true;
+		} );
 
 	AddFormat("msg ls", {}, {pNym}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.MsgDisplayForNym( D.v(1, U.NymGetName(U.NymGetDefault())) , D.has("--dryrun") );
@@ -958,6 +979,32 @@ void cCmdFormat::Debug() const {
 	_info(".. mOption size=" << mOption.size());
 }
 
+void cCmdFormat::PrintUsageShort(ostream &out) const {
+	bool written=false;
+	{ 
+		size_t nr=0;  for(auto var : mVar) { if (nr) out<<" ";  out << (string)var;  ++nr; written=true; }
+	}
+	if (written) out<<" ";
+
+	written=false;
+	{ 
+		size_t nr=0;  for(auto var : mVarExt) { if (nr) out<<" ";  out << '[' << (string)var <<']';  ++nr; written=true; }
+	}
+	if (written) out<<" ";
+
+	written=false;
+	{ 
+		size_t nr=0;  
+		for(auto opt : mOption) { if (nr) out<<" ";  
+			string name = opt.first;
+			out << "[--" << name <<']';  
+			++nr; 
+			written=true;
+		}
+	}
+	if (written) out<<" ";
+}
+
 // ========================================================================================================================
 
 cCmdExecutable::tExitCode cCmdExecutable::operator()( shared_ptr<cCmdData> data, nUse::cUseOT & useOt) {
@@ -1078,7 +1125,8 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 
 	auto alltest = vector<string>{ ""
 	//ot msg --dryrun
-	"ot msg ls --dryrun"
+	,"ot msg help"
+	,"ot msg ls --dryrun"
 	,"ot msg ls alice --dryrun"
 	,"ot msg sendfrom alice bob --prio 1 --dryrun"
 	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4 --dryrun"

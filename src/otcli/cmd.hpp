@@ -84,13 +84,15 @@ class cCmdParser : public enable_shared_from_this<cCmdParser> { MAKE_CLASS_NAME(
 
 		void Init();
 		void Test();
+
+		void PrintUsage();
 };
 
 /**
 Particular instance of process of parsing one input. 
 E.g. parsing the input "msg sendfrom rafal dorota 5000" and pointing to standard parser
 */
-class cCmdProcessing { MAKE_CLASS_NAME("cCmdProcessing");
+class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLASS_NAME("cCmdProcessing");
 	protected:
 		shared_ptr<cCmdParser> mParser; // our "parent" parser to use here
 
@@ -132,6 +134,7 @@ class cCmdFormat {  MAKE_CLASS_NAME("cCmdFormat");
 		cCmdExecutable getExec() const;
 
 		void Debug() const;
+		void PrintUsageShort(ostream &out) const;
 };
 
 /**
@@ -156,6 +159,7 @@ class cCmdData {  MAKE_CLASS_NAME("cCmdData");
 
 	public:
 		cCmdData()=default;
+		virtual ~cCmdData()=default;
 
 		/** USE CASES:
 		for options: --cc eve --cc mark --bcc zoidberg --pivate
@@ -196,6 +200,8 @@ class cCmdData {  MAKE_CLASS_NAME("cCmdData");
 		
 		bool has(const string &name) const throw(cErrArgIllegal) { return IsOpt(name); }
 
+//		virtual const cCmdProcessing* MetaGetProcessing() const; // return optional pointer to the processing information
+//		virtual cCmdProcessing MetaGetProcessing() const; // return optional pointer to the processing information
 
 	protected:
 		void AssertLegalOptName(const string & name) const throw(cErrArgIllegal); // used internally to catch programming errors e.g. in binding lambdas
@@ -239,9 +245,15 @@ class cParamInfo {  MAKE_CLASS_NAME("cParamInfo");
 		tFuncValid funcValid;
 		tFuncHint funcHint;
 
+		string mName; // short name
+
 	public:
 		cParamInfo()=default;
+		//cParamInfo(const string& name) : mName(name) { }
 		cParamInfo(tFuncValid valid, tFuncHint hint);
+		//cParamInfo(const string& name, tFuncValid valid, tFuncHint hint);
+
+		operator string() const noexcept { return mName; }
 };
 
 
