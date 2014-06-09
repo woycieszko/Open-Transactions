@@ -225,7 +225,7 @@ class cEnvUtils {
 	void OpenEditor();
 	const string ReadFromTmpFile();
 public:
-	const string ComposeMsg();
+	const string Compose();
 };
 // ====================================================================
 

@@ -145,25 +145,28 @@ const string cUseOT::AccountGetName(const string & accountID) {
 	return OTAPI_Wrap::GetAccountWallet_Name(accountID);
 }
 
-void cUseOT::AccountRemove(const string & accountName) { ///<
-	if(!Init())
-	return;
+bool cUseOT::AccountRemove(const string & accountName, bool dryrun) { ///<
+	_fact("account rm " << accountName);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
 	if(OTAPI_Wrap::Wallet_CanRemoveAccount (AccountGetId(accountName))) {
 		_erro("Account cannot be deleted: doesn't have a zero balance?/outstanding receipts?");
-		return;
+		return false;
 	}
 
 	if( OTAPI_Wrap::deleteAssetAccount( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), AccountGetId(accountName) ) ) { //FIXME should be
 		_erro("Failure deleting account: " + accountName);
-		return;
+		return false;
 	}
 	_info("Account: " + accountName + " was successfully removed");
+	return true;
 }
 
-void cUseOT::AccountRefresh(const string & accountName) {
-	if(!Init())
-		return;
+bool cUseOT::AccountRefresh(const string & accountName, bool dryrun) {
+	_fact("account refresh " << accountName);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
 	OT_ME madeEasy;
 
@@ -174,9 +177,10 @@ void cUseOT::AccountRefresh(const string & accountName) {
 
 	if ( madeEasy.retrieve_account(acctSvrID, acctNymID, accountID, true) ){ // forcing download
 		_info("Account " + accountName + "(" + accountID +  ")" + " retrieval success");
-		return;
+		return true;
 	}
 	_warn("Account " + accountName + "(" + accountID +  ")" + " retrieval failure");
+	return false;
 }
 
 void cUseOT::AccountRefreshAll() {
@@ -206,47 +210,61 @@ void cUseOT::AccountRefreshAll() {
 	}
 }
 
-const string cUseOT::AccountRename(const string & oldAccountName, const string & newAccountName) {
+bool cUseOT::AccountRename(const string & oldAccountName, const string & newAccountName, bool dryrun) {
+	_fact("account mv from " << oldAccountName << " to " << newAccountName);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
-		AccountSetName (AccountGetId(oldAccountName), newAccountName);
-	return "";
+	if( AccountSetName (AccountGetId(oldAccountName), newAccountName) ) {
+		_info("Account " << oldAccountName << " renamed to " << newAccountName);
+		return true;
+	}
+	_erro("Failed to rename account " << oldAccountName << " to " << newAccountName);
+	return false;
 }
 
-const string cUseOT::AccountSetName(const string & accountID, const string & NewAccountName) { //TODO: passing to function: const string & nymName, const string & signerNymName,
-	if(!Init())
-	return "";
+bool cUseOT::AccountSetName(const string & accountID, const string & newAccountName) { //TODO: passing to function: const string & nymName, const string & signerNymName,
+	if(!Init()) return false;
 
-		OTAPI_Wrap::SetAccountWallet_Name (accountID, mDefaultIDs.at("UserID"), NewAccountName);
-	return "";
+	if ( !OTAPI_Wrap::SetAccountWallet_Name (accountID, mDefaultIDs.at("UserID"), newAccountName) ) {
+		_erro("Failed trying to name new account: " << accountID);
+		return false;
+	}
+	_info("Set account " << accountID << "name to " << newAccountName);
+	return true;
 }
 
-void cUseOT::AccountCreate(const string & assetName, const string & newAccountName) {
-	if(!Init())
-	return ;
+bool cUseOT::AccountCreate(const string & assetName, const string & newAccountName, bool dryrun) {
+	_fact("account new asset=" << assetName << "accountName=" << newAccountName);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
 	OT_ME madeEasy;
-	string strResponse;
-	strResponse = madeEasy.create_asset_acct(mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), AssetGetId(assetName));
+	string response;
+	response = madeEasy.create_asset_acct(mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), AssetGetId(assetName));
 
 	// -1 error, 0 failure, 1 success.
-	if (1 != madeEasy.VerifyMessageSuccess(strResponse))
+	if (1 != madeEasy.VerifyMessageSuccess(response))
 	{
 		_erro("Failed trying to create Account at Server.");
-		return;
+		return false;
 	}
 
 	// Get the ID of the new account.
-	string strID = OTAPI_Wrap::Message_GetNewAcctID(strResponse);
-	if (!strID.size()){
+	ID accountID = OTAPI_Wrap::Message_GetNewAcctID(response);
+	if (!accountID.size()){
 		_erro("Failed trying to get the new account's ID from the server response.");
-		return;
+		return false;
 	}
 
 	// Set the Name of the new account.
-	AccountSetName(strID,newAccountName);
-
-	cout << "Account " << newAccountName << "(" << strID << ")" << " created successfully." << endl;
+	if ( AccountSetName(accountID, newAccountName) ){
+		cout << "Account " << newAccountName << "(" << accountID << ")" << " created successfully." << endl;
+		return true;
+	}
+	return false;
 }
+
 const vector<string> cUseOT::AccountGetAllNames() {
 	if(!Init())
 	return vector<string> {};
@@ -259,10 +277,27 @@ const vector<string> cUseOT::AccountGetAllNames() {
 	return accounts;
 }
 
-void cUseOT::AccountSetDefault(const string & accountName) {
-	if(!Init())
-		return ;
+bool cUseOT::AccountDisplayAllNames(bool dryrun) {
+	_fact("account ls");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	_dbg3("Retrieving all accounts names");
+	vector<string> accounts;
+	for(int i = 0 ; i < OTAPI_Wrap::GetAccountCount ();i++) {
+		accounts.push_back(OTAPI_Wrap::GetAccountWallet_Name ( OTAPI_Wrap::GetAccountWallet_ID (i)));
+	}
+	nUtils::DisplayVector(cout, accounts);
+	return true;
+}
+
+bool cUseOT::AccountSetDefault(const string & accountName, bool dryrun) {
+	_fact("account set-default " << accountName);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
 	mDefaultIDs.at("AccountID") = AccountGetId(accountName);
+	return true;
 }
 
 bool cUseOT::AssetCheckIfExists(const string & assetName) {
@@ -280,10 +315,24 @@ const vector<string> cUseOT::AssetGetAllNames() {
 	return vector<string> {};
 
 	vector<string> assets;
-	for(int i = 0 ; i < OTAPI_Wrap::GetAssetTypeCount ();i++) {
+	for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetAssetTypeCount ();i++) {
 		assets.push_back(OTAPI_Wrap::GetAssetType_Name ( OTAPI_Wrap::GetAssetType_ID (i)));
 	}
 	return assets;
+}
+
+bool cUseOT::AssetDisplayAllNames(bool dryrun) {
+	_fact("asset ls");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	_dbg3("Retrieving all asset names");
+	vector<string> assets;
+	for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetAssetTypeCount();i++) {
+		assets.push_back(OTAPI_Wrap::GetAssetType_Name( OTAPI_Wrap::GetAssetType_ID(i)) );
+	}
+	nUtils::DisplayVector(cout, assets);
+	return true;
 }
 
 const string cUseOT::AssetGetId(const string & assetName) {
@@ -292,7 +341,7 @@ const string cUseOT::AssetGetId(const string & assetName) {
 	if ( nUtils::checkPrefix(assetName) )
 		return assetName.substr(1);
 	else {
-		for(int i = 0 ; i < OTAPI_Wrap::GetAssetTypeCount ();i++) {
+		for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetAssetTypeCount ();i++) {
 			if(OTAPI_Wrap::GetAssetType_Name ( OTAPI_Wrap::GetAssetType_ID (i))==assetName)
 				return OTAPI_Wrap::GetAssetType_ID (i);
 		}
@@ -311,9 +360,15 @@ const string cUseOT::AssetGetDefault(){
 	return mDefaultIDs.at("PurseID");
 }
 
-const string cUseOT::AssetIssue(const std::string & serverID, const std::string & nymID, const std::string & signedContract) { // Issue new asset type
-	if(!Init())
-	return "";
+bool cUseOT::AssetIssue(const string & serverID, const string & nymID, bool dryrun) { // Issue new asset type
+	_fact("asset ls");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string signedContract;
+	_dbg3("Message is empty, starting text editor");
+	nUtils::cEnvUtils envUtils;
+	signedContract = envUtils.Compose();
 
 	OT_ME madeEasy;
 	//std::string OT_ME::issue_asset_type(const std::string  & SERVER_ID, const std::string  & NYM_ID, const std::string  & THE_CONTRACT)
@@ -323,15 +378,21 @@ const string cUseOT::AssetIssue(const std::string & serverID, const std::string 
 	if (1 != madeEasy.VerifyMessageSuccess(strResponse))
 	{
 		_erro("Failed trying to issue asset at Server.");
-		return "";
+		return false;
 	}
-	return strResponse;
+	return true;
 }
 
-const string cUseOT::AssetNew(const std::string & nymID, const std::string & xmlContents){
-	if(!Init())
-			return "";
-	return OTAPI_Wrap::CreateAssetContract(nymID, xmlContents);
+bool cUseOT::AssetNew(const std::string & nymID, bool dryrun) {
+	_fact("asset new for nym=" << nymID);
+	if(dryrun) return false;
+	if(!Init()) return false;
+	string xmlContents;
+	nUtils::cEnvUtils envUtils;
+	xmlContents = envUtils.Compose();
+
+	nUtils::DisplayStringEndl(cout, OTAPI_Wrap::CreateAssetContract(nymID, xmlContents) ); //TODO save contract to file
+	return true;
 }
 
 void cUseOT::AssetRemove(const string & assetName) {
@@ -392,17 +453,15 @@ bool cUseOT::MsgDisplayForNym(const string & nymName, bool dryrun) { ///< Get al
 
 bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
 	_fact("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
-	if (dryrun) return false;
-
-	if(!Init())
-			return false;
+	if(dryrun) return false;
+	if(!Init()) return false;
 
 	string outMsg;
 
 	if ( msg.empty() ) {
 		_dbg3("Message is empty, starting text editor");
 		nUtils::cEnvUtils envUtils;
-		outMsg = envUtils.ComposeMsg();
+		outMsg = envUtils.Compose();
 	}
 	else
 		outMsg = msg;
@@ -436,17 +495,17 @@ bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, cons
 	return true;
 }
 
-bool cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, const string & msg) { ///< Send message from Nym1 to Nym2
-	_note("MsgSend " << nymSender << " to " << nymRecipient << " msg=" << msg);
-	
-	if(!Init())
-		return false;
-
-	string subject = "";
-	int prio = 0;
-	bool dryrun = false;
-	return MsgSend(nymSender, vector<string> {nymRecipient}, msg, subject, prio, dryrun);
-}
+//bool cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, const string & msg) { ///< Send message from Nym1 to Nym2
+//	_note("MsgSend " << nymSender << " to " << nymRecipient << " msg=" << msg);
+//
+//	if(!Init())
+//		return false;
+//
+//	string subject = "";
+//	int prio = 0;
+//	bool dryrun = false;
+//	return MsgSend(nymSender, vector<string> {nymRecipient}, msg, subject, prio, dryrun);
+//}
 
 bool cUseOT::MsgInCheckIndex(const string & nymName, const int32_t & nIndex) {
 	if(!Init())
@@ -479,50 +538,55 @@ bool cUseOT::MsgInRemoveByIndex(const string & nymName, const int32_t & index, b
 
 bool cUseOT::MsgOutRemoveByIndex(const string & nymName, const int32_t & index, bool dryrun) {
 	_fact("msg rm-out " << nymName << " index=" << index);
-		if (dryrun) return false;
+	if (dryrun) return false;
 	if(!Init()) return false;
-	if( OTAPI_Wrap::Nym_RemoveOutmailByIndex(NymGetId(nymName), index) ){
+	if( OTAPI_Wrap::Nym_RemoveOutmailByIndex(NymGetId(nymName), index) ) {
 		_info("Message " << index << " removed successfully from " << nymName << " outbox");
 		return true;
 	}
 	return false;
 }
 
-void cUseOT::NymCheck(const string & hisNymID) { // wip
-	if(!Init())
-		return;
+bool cUseOT::NymCheck(const string & nymName, bool dryrun) { // wip
+	_fact("nym check " << nymName);
+	if (dryrun) return false;
+	if(!Init()) return false;
 
+	ID nymID = NymGetId(nymName);
 	OT_ME madeEasy;
-	string strResponse = madeEasy.check_user( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), hisNymID );
+	string strResponse = madeEasy.check_user( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), nymID );
 	// -1 error, 0 failure, 1 success.
-	if (1 != madeEasy.VerifyMessageSuccess(strResponse))
-	{
-		_erro("Failed trying to download user public key.");
-		return;
+	if (1 != madeEasy.VerifyMessageSuccess(strResponse)) {
+		_erro("Failed trying to download public key for nym: " << nymName << "(" << nymID << ")" );
+		return false;
 	}
-	_info("Successfully downloaded user public key.");
+	_info("Successfully downloaded user public key for nym: " << nymName << "(" << nymID << ")" );
+	return true;
 }
 
-void cUseOT::NymCreate(const string & nymName) {
-	if(!Init())
-	return ;
+bool cUseOT::NymCreate(const string & nymName, bool dryrun) {
+	_fact("nym create " << nymName);
+	if (dryrun) return false;
+	if(!Init()) return false;
 
 	OT_ME madeEasy;
 	int32_t nKeybits = 1024;
 	string NYM_ID_SOURCE = ""; //TODO: check
 	string ALT_LOCATION = "";
-	string strID = madeEasy.create_pseudonym(nKeybits, NYM_ID_SOURCE, ALT_LOCATION);
+	string nymID = madeEasy.create_pseudonym(nKeybits, NYM_ID_SOURCE, ALT_LOCATION);
 
-	if (strID.empty())
-	{
-		_erro("Failed trying to create new Nym.");
-		return;
+	if (nymID.empty()) {
+		_erro("Failed trying to create new Nym: " << nymName);
+		return false;
 	}
-
 	// Set the Name of the new Nym.
-	OTAPI_Wrap::SetNym_Name(strID, strID, nymName);
-
-	_info("Nym " << nymName << "(" << strID << ")" << " created successfully.");
+	if ( !OTAPI_Wrap::SetNym_Name(nymID, nymID, nymName) ) { //Signer Nym? When testing, there is only one nym, so you just pass it twice. But in real production, a user will have a default signing nym, the same way that he might have a default signing key in PGP, and that must be passed in whenever he changes the name on any of the other nyms in his wallet. (In order to properly sign and save the change.)
+		_erro("Failed trying to name new Nym: " << nymID);
+		return false;
+	}
+	_info("Nym " << nymName << "(" << nymID << ")" << " created successfully.");
+	//	TODO add nym to the cache
+	return true;
 }
 
 bool cUseOT::NymCheckIfExists(const string & nymName) { ///< Check only name!
@@ -575,6 +639,17 @@ const vector<string> cUseOT::NymGetAllNames() {
 	return names;
 }
 
+bool cUseOT::NymDisplayAllNames(bool dryrun) {
+	_fact("nym ls ");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	NymGetAll();
+	nUtils::DisplayMap(cout, mNyms);
+
+	return true;
+}
+
 const string cUseOT::NymGetDefault() {
 	if(!Init())
 		return "";
@@ -597,18 +672,13 @@ const string cUseOT::NymGetId(const string & nymName) { // Gets nym aliases and 
 	return "";
 }
 
-const string cUseOT::NymGetInfo(const string & nymName) {
-	if(!Init())
-		return "";
+bool cUseOT::NymDisplayInfo(const string & nymName, bool dryrun) {
+	_fact("nym info " << nymName);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
-	if (NymCheckIfExists(nymName)){
-		return OTAPI_Wrap::GetNym_Stats( NymGetId(nymName) );
-	}
-	else {
-		_erro("Nym not found");
-	}
-
-	return "";
+	cout << OTAPI_Wrap::GetNym_Stats( NymGetId(nymName) );
+	return true;
 }
 
 const string cUseOT::NymGetName(const string & nymID) {
@@ -617,98 +687,103 @@ const string cUseOT::NymGetName(const string & nymID) {
 	return OTAPI_Wrap::GetNym_Name(nymID);
 }
 
-void cUseOT::NymRefresh(const string & nymName) { //TODO arguments for server, all servers
-	if(!Init())
-		return;
+bool cUseOT::NymRefresh(const string & nymName, bool all, bool dryrun) { //TODO arguments for server, all servers
+	_fact("nym refresh " << nymName << " all?=" << all);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
 	OT_ME madeEasy;
 	int32_t serverCount = OTAPI_Wrap::GetServerCount();
-
-	ID nymID = AccountGetId(nymName);
-
-	for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){ // Working for all available servers!
-		ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
-		if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)){
-			if ( madeEasy.retrieve_nym(nymID, serverID, true) ){ // forcing download
-				_info("Nym " + nymName + "(" + nymID +  ")" + " retrieval success");
-				return;
+	if (all) {
+		int32_t nymCount = OTAPI_Wrap::GetNymCount();
+		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){ // Working for all available servers!
+			for (int32_t accountIndex = 0; accountIndex < nymCount; ++accountIndex){
+				ID nymID = OTAPI_Wrap::GetNym_ID(accountIndex);
+				ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
+				if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)){
+					if ( madeEasy.retrieve_nym(nymID, serverID, true) ){ // forcing download
+						_info("Nym " + nymName + "(" + nymID +  ")" + " retrieval success from server " + ServerGetName(serverID) + "(" + serverID +  ")");
+					}
+					_warn("Nym " + nymName + "(" + nymID +  ")" + " retrieval failure from server " + ServerGetName(serverID) + "(" + serverID +  ")");
+				}
 			}
-			_warn("Nym " + nymName + "(" + nymID +  ")" + " retrieval failure");
 		}
 	}
-}
-
-void cUseOT::NymRefreshAll() {
-	if(!Init())
-		return;
-
-	OT_ME madeEasy;
-
-	int32_t nymCount = OTAPI_Wrap::GetNymCount();
-	int32_t serverCount = OTAPI_Wrap::GetServerCount();
-
-	for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){
-		ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
-
-		for (int32_t accountIndex = 0; accountIndex < nymCount; ++accountIndex){
-			ID nymID = OTAPI_Wrap::GetNym_ID(accountIndex);
-
+	else {
+		ID nymID = AccountGetId(nymName);
+		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){ // Working for all available servers!
+			ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
 			if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)){
 				if ( madeEasy.retrieve_nym(nymID, serverID, true) ){ // forcing download
-					_info("Nym " + NymGetName(nymID) + "(" + nymID +  ")" + " retrieval success");
-					return;
+					_info("Nym " + nymName + "(" + nymID +  ")" + " retrieval success from server " + ServerGetName(serverID) + "(" + serverID +  ")");
 				}
-				_warn("Nym " + NymGetName(nymID) + "(" + nymID +  ")" + " retrieval failure");
+				_warn("Nym " + nymName + "(" + nymID +  ")" + " retrieval failure from server " + ServerGetName(serverID) + "(" + serverID +  ")");
 			}
 		}
 	}
+	return true; //TODO
 }
 
-void cUseOT::NymRegister(const string & nymName, const string & serverName) {
-	if(!Init())
-	return ;
+bool cUseOT::NymRegister(const string & nymName, const string & serverName, bool dryrun) {
+	_fact("nym register " << nymName << " on server " << serverName);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
 	OT_ME madeEasy;
-
-	_warn("Checking for default server only");
 
 	ID nymID = NymGetId(nymName);
 	ID serverID = ServerGetId(serverName);
 
-	bool isReg = OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID);
-
-	if (!isReg)
-	{
+	if (!OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)) {
 		string response = madeEasy.register_nym(serverID, nymID);
 		nOT::nUtils::DisplayStringEndl(cout, response);
-		nOT::nUtils::DisplayStringEndl(cout, "Nym " + nymName + "(" + nymID + ")" + " was registered successfully on server");
+		_info("Nym " << nymName << "(" << nymID << ")" << " was registered successfully on server");
+		return true;
 	}
-	else
-		cout << "Nym " << nymName << "(" << nymID << ")" << " was already registered" << endl;
+	_info("Nym " << nymName << "(" << nymID << ")" << " was already registered" << endl);
+	return true;
 }
 
-void cUseOT::NymRemove(const string & nymName) {
-	if(!Init())
-	return ;
+bool cUseOT::NymRemove(const string & nymName, bool dryrun) {
+	_fact("nym rm " << nymName);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
 	string nymID = NymGetId(nymName);
 	if ( OTAPI_Wrap::Wallet_CanRemoveNym(nymID) ) {
-		if ( OTAPI_Wrap::Wallet_RemoveNym(nymID) )
-			_info("Nym was deleted successfully");
-		else
-			_warn("Nym cannot be removed");
+		if ( OTAPI_Wrap::Wallet_RemoveNym(nymID) ) {
+			_info("Nym " << nymName  <<  "(" << nymID << ")" << " was deleted successfully");
+			return true;
+		}
 	}
+	_warn("Nym " << nymName  <<  "(" << nymID << ")" << " cannot be removed");
+	return false;
 }
 
-void cUseOT::NymSetDefault(const string & nymName) {
-	if(!Init())
-		return ;
+bool cUseOT::NymSetDefault(const string & nymName, bool dryrun) {
+	_fact("nym set-default " << nymName);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
 	mDefaultIDs.at("UserID") = NymGetId(nymName);
+	return true;
 }
 
-void cUseOT::ServerAdd(const std::string & contract) {
-	if(!Init())
-			return ;
-	OTAPI_Wrap::AddServerContract( contract );
+bool cUseOT::ServerAdd(bool dryrun) {
+	_fact("server ls");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string contract;
+	nUtils::cEnvUtils envUtils;
+	contract = envUtils.Compose();
+
+	if( OTAPI_Wrap::AddServerContract(contract) ) {
+		_info("Server added");
+		return true;
+	}
+	_erro("Failure to add server");
+	return false;
 }
 
 void cUseOT::ServerCheck() { ///< Use it to ping server
@@ -761,24 +836,30 @@ const string cUseOT::ServerGetName(const string & serverID){
 	return OTAPI_Wrap::GetServer_Name(serverID);
 }
 
-void cUseOT::ServerRemove(const string & serverName) {
-	if(!Init())
-		return ;
-	string nymID = ServerGetId(serverName);
-	if ( OTAPI_Wrap::Wallet_CanRemoveServer(serverName) ) {
-		if ( OTAPI_Wrap::Wallet_RemoveServer(serverName) )
-			_info("Server was deleted successfully");
-		else
-			_warn("Server cannot be removed");
+bool cUseOT::ServerRemove(const string & serverName, bool dryrun) {
+	_fact("server rm " << serverName);
+	if(dryrun) return false;
+	if(!Init()) return false;
+	string serverID = ServerGetId(serverName);
+	if ( OTAPI_Wrap::Wallet_CanRemoveServer(serverID) ) {
+		if ( OTAPI_Wrap::Wallet_RemoveServer(serverID) ) {
+			_info("Server " << serverName << " was deleted successfully");
+			return true;
+		}
+		_warn("Failed to remove server " << serverName);
+		return false;
 	}
+	_warn("Server " << serverName << " cannot be removed");
+	return false;
 }
 
+bool cUseOT::ServerSetDefault(const string & serverName, bool dryrun) {
+	_fact("server set-default " << serverName);
+	if(dryrun) return false;
+	if(!Init()) return false;
 
-void cUseOT::ServerSetDefault(const string & serverName) {
-	if(!Init())
-		return ;
 	mDefaultIDs.at("ServerID") = ServerGetId(serverName);
-	_info("Default server: " + mDefaultIDs.at("ServerID"));
+	return true;
 }
 
 const vector<string> cUseOT::ServerGetAllNames() { ///< Gets all servers name
@@ -793,40 +874,95 @@ const vector<string> cUseOT::ServerGetAllNames() { ///< Gets all servers name
 	return servers;
 }
 
-const string cUseOT::TextEncode(const string & plainText) {
-	if(!Init())
-		return "";
+bool cUseOT::ServerDisplayAllNames(bool dryrun) {
+	_fact("server ls");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	vector<string> servers;
+	for(int i = 0 ; i < OTAPI_Wrap::GetServerCount ();i++) {
+		servers.push_back( OTAPI_Wrap::GetServer_Name( OTAPI_Wrap::GetServer_ID(i) ) );
+	}
+	nUtils::DisplayVector(cout, servers);
+	return true;
+}
+
+bool cUseOT::TextEncode(const string & plainText, bool dryrun) {
+	_fact("text encode");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string plainTextIn;
+	if ( plainText.empty() ) {
+		nUtils::cEnvUtils envUtils;
+		plainTextIn = envUtils.Compose();
+	}
+	else
+		plainTextIn = plainText;
 
 	bool bLineBreaks = true; // FIXME? OTAPI_Wrap - bLineBreaks should usually be set to true
 	string encodedText;
-	encodedText = OTAPI_Wrap::Encode (plainText, bLineBreaks);
-	return encodedText;
+	encodedText = OTAPI_Wrap::Encode (plainTextIn, bLineBreaks);
+	nUtils::DisplayStringEndl(cout, encodedText);
+	return true;
 }
 
-const string cUseOT::TextEncrypt(const string & recipientNymName, const string & plainText) {
-	if(!Init())
-		return "";
+bool cUseOT::TextEncrypt(const string & recipientNymName, const string & plainText, bool dryrun) {
+	_fact("text encrypt to " << recipientNymName);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string plainTextIn;
+	if ( plainText.empty() ) {
+		nUtils::cEnvUtils envUtils;
+		plainTextIn = envUtils.Compose();
+	}
+	else
+		plainTextIn = plainText;
+
 	string encryptedText;
-	encryptedText = OTAPI_Wrap::Encrypt(NymGetId(recipientNymName), plainText);
-	return encryptedText;
+	encryptedText = OTAPI_Wrap::Encrypt(NymGetId(recipientNymName), plainTextIn);
+	nUtils::DisplayStringEndl(cout, encryptedText);
+	return true;
 }
 
-const string cUseOT::TextDecode(const string & encodedText) {
-	if(!Init())
-		return "";
+bool cUseOT::TextDecode(const string & encodedText, bool dryrun) {
+	_fact("text decode");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string encodedTextIn;
+	if ( encodedText.empty() ) {
+		nUtils::cEnvUtils envUtils;
+		encodedTextIn = envUtils.Compose();
+	}
+	else
+		encodedTextIn = encodedText;
 
 	bool bLineBreaks = true; // FIXME? OTAPI_Wrap - bLineBreaks should usually be set to true
 	string plainText;
-	plainText = OTAPI_Wrap::Decode (encodedText, bLineBreaks);
-	return plainText;
+	plainText = OTAPI_Wrap::Decode (encodedTextIn, bLineBreaks);
+	nUtils::DisplayStringEndl(cout, plainText);
+	return true;
 }
 
-const string cUseOT::TextDecrypt(const string & recipientNymName, const string & encryptedText) {
-	if(!Init())
-		return "";
+bool cUseOT::TextDecrypt(const string & recipientNymName, const string & encryptedText, bool dryrun) {
+	_fact("text decrypt for " << recipientNymName );
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string encryptedTextIn;
+		if ( encryptedText.empty() ) {
+			nUtils::cEnvUtils envUtils;
+			encryptedTextIn = envUtils.Compose();
+		}
+		else
+			encryptedTextIn = encryptedText;
+
 	string plainText;
-	plainText = OTAPI_Wrap::Decrypt(NymGetId(recipientNymName), encryptedText);
-	return plainText;
+	plainText = OTAPI_Wrap::Decrypt(NymGetId(recipientNymName), encryptedTextIn);
+	nUtils::DisplayStringEndl(cout, plainText);
+	return true;
 }
 
 } // nUse

@@ -50,22 +50,24 @@ namespace nUse {
 		const string AccountGetId(const string & accountName);
 		const string AccountGetDefault();
 		const string AccountGetName(const string & accountID);
-		void AccountRemove(const string & accountName);
+		bool AccountRemove(const string & accountName, bool dryrun) ;
 		const vector<string> AccountGetAllNames();
+		bool AccountDisplayAllNames(bool dryrun);
 		const vector<string> AccountGetAllIds();
-		void AccountRefresh(const string & accountName);
-		void AccountRefreshAll();
-		const string AccountRename(const string & oldAccountName, const string & newAccountName);
-		void AccountSetDefault(const string & accountName);
-		const string AccountSetName(const string & accountID, const string & NewAccountName);
-		void AccountCreate(const string & AssetName, const string & newAccountName);
+		bool AccountRefresh(const string & accountName, bool dryrun);
+		void AccountRefreshAll(); //TODO remove
+		bool AccountRename(const string & oldAccountName, const string & newAccountName, bool dryrun);
+		bool AccountSetDefault(const string & accountName, bool dryrun);
+		bool AccountSetName(const string & accountID, const string & NewAccountName);
+		bool AccountCreate(const string & assetName, const string & newAccountName, bool dryrun);
 
 
 		bool AssetCheckIfExists(const string & assetName);
 		const string AssetGetId(const string & assetName);
 		const vector<string> AssetGetAllNames();
-		const string AssetIssue(const std::string & serverID, const std::string & nymID, const std::string & signedContract);
-		const string AssetNew(const std::string & nymID, const std::string & xmlContents);
+		bool AssetDisplayAllNames(bool dryrun);
+		bool AssetIssue(const string & serverID, const string & nymID, bool dryrun) ;
+		bool AssetNew(const std::string & nymID, bool dryrun);
 		const string AssetGetContract(const std::string & assetID);
 		const string AssetGetDefault(); // Also known as purse
 		void AssetRemove(const string & assetName);
@@ -82,36 +84,37 @@ namespace nUse {
 		bool MsgInRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
 		bool MsgOutRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
 
-		void NymCheck(const string & hisNymID);
+		bool NymCheck(const string & nymName, bool dryrun);
 		bool NymCheckIfExists(const string & nymName);
-		void NymCreate(const string & nymName);
+		bool NymCreate(const string & nymName, bool dryrun);
 		void NymGetAll();
 		const vector<string> NymGetAllIDs();
 		const vector<string> NymGetAllNames();
+		bool NymDisplayAllNames(bool dryrun);
 		const string NymGetDefault();
 		const string NymGetId(const string & nymName);
-		const string NymGetInfo(const string & nymName);
+		bool NymDisplayInfo(const string & nymName, bool dryrun);
 		const string NymGetName(const string & nymID);
-		void NymRefresh(const string & nymName);
-		void NymRefreshAll();
-		void NymRegister(const string & nymName, const string & serverName);
-		void NymRemove(const string & nymName);
-		void NymSetDefault(const string & nymName);
+		bool NymRefresh(const string & nymName, bool all, bool dryrun);
+		bool NymRegister(const string & nymName, const string & serverName, bool dryrun);
+		bool NymRemove(const string & nymName, bool dryrun);
+		bool NymSetDefault(const string & nymName, bool dryrun);
 
-		void ServerAdd(const std::string & contract);
+		bool ServerAdd(bool dryrun);
 		void ServerCheck();
 		bool ServerCheckIfExists(const string & serverName);
 		const string ServerGetDefault();
 		const string ServerGetId(const string & serverName);
 		const string ServerGetName(const string & serverID);
-		void ServerRemove(const string & serverName);
-		void ServerSetDefault(const string & serverName);
+		bool ServerRemove(const string & serverName, bool dryrun);
+		bool ServerSetDefault(const string & serverName, bool dryrun);
 		const vector<string> ServerGetAllNames();
+		bool ServerDisplayAllNames(bool dryrun);
 
-		const string TextEncode(const string & plainText);
-		const string TextEncrypt(const string & recipientNymName, const string & plainText);
-		const string TextDecode(const string & encodedText);
-		const string TextDecrypt(const string & recipientNymName, const string & encryptedText);
+		bool TextEncode(const string & plainText, bool dryrun);
+		bool TextEncrypt(const string & recipientNymName, const string & plainText, bool dryrun);
+		bool TextDecode(const string & encodedText, bool dryrun);
+		bool TextDecrypt(const string & recipientNymName, const string & encryptedText, bool dryrun);
 	};
 
 } // nUse

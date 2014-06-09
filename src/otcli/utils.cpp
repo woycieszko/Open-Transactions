@@ -304,18 +304,6 @@ cConfigManager configManager;
 
 #ifdef __unix
 
-//class cEnvUtils {
-//	int fd;
-//
-//	const string GetTmpTextFile();
-//	void CloseFile(const string & filename);
-//	void OpenEditor();
-//	string ReadFromTmpFile();
-//public:
-//
-//	string ComposeMsg();
-//};
-
 void cEnvUtils::GetTmpTextFile() {
 	char filename[] = "/tmp/otcli_text.XXXXXX";
 	fd = mkstemp(filename);
@@ -352,7 +340,7 @@ const string cEnvUtils::ReadFromTmpFile() {
 	return msg;
 }
 
-const string cEnvUtils::ComposeMsg() {
+const string cEnvUtils::Compose() {
 	GetTmpTextFile();
 	OpenEditor();
 	string input = ReadFromTmpFile();
