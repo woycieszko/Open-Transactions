@@ -304,20 +304,60 @@ cConfigManager configManager;
 
 #ifdef __unix
 
-const string cEnvUtils::GetTmpTextFile() {
+//class cEnvUtils {
+//	int fd;
+//
+//	const string GetTmpTextFile();
+//	void CloseFile(const string & filename);
+//	void OpenEditor();
+//	string ReadFromTmpFile();
+//public:
+//
+//	string ComposeMsg();
+//};
+
+void cEnvUtils::GetTmpTextFile() {
 	char filename[] = "/tmp/otcli_text.XXXXXX";
 	fd = mkstemp(filename);
 	if (fd == -1) {
 		_erro("Can't create the file: " << filename);
-		return "";
+		return;
 	}
-	string filenameStr = filename;
-	return filenameStr;
+	mFilename = filename;
 }
 
-void cEnvUtils::CloseFile(const string & filename) {
+void cEnvUtils::CloseFile() {
 	close(fd);
-	unlink( filename.c_str() );
+	unlink( mFilename.c_str() );
+}
+
+void  cEnvUtils::OpenEditor() {
+	char* editor = std::getenv("OT_EDITOR");
+	if (editor == NULL)
+		editor = std::getenv("VISUAL");
+	if (editor == NULL)
+		editor = std::getenv("EDITOR");
+
+	string command;
+	if (editor != NULL)
+		command = ToStr(editor) + " " + mFilename;
+	else
+		command = "vim " + mFilename;
+	system( command.c_str() );
+}
+
+const string cEnvUtils::ReadFromTmpFile() {
+	std::ifstream ifs(mFilename);
+	string msg((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+	return msg;
+}
+
+const string cEnvUtils::ComposeMsg() {
+	GetTmpTextFile();
+	OpenEditor();
+	string input = ReadFromTmpFile();
+	CloseFile();
+	return input;
 }
 
 #endif

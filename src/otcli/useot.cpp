@@ -393,15 +393,20 @@ bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, cons
 
 	if(!Init())
 			return false;
-	if ( msg.empty() ) {
-		nUtils::cEnvUtils envUtils;
-		string filename = envUtils.GetTmpTextFile();
-		string command = "vim " + filename;
-		system( command.c_str() );
 
-		std::ifstream ifs(filename);
-		std::string input((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-		_mark("Multiline text: " + input);
+	string outMsg;
+
+	if ( msg.empty() ) {
+		_dbg3("Message is empty, starting text editor");
+		nUtils::cEnvUtils envUtils;
+		outMsg = envUtils.ComposeMsg();
+	}
+	else
+		outMsg = msg;
+
+	if ( outMsg.empty() ) {
+		_warn("Can't send the message: message is empty");
+		return false;
 	}
 
 	OT_ME madeEasy;
@@ -412,9 +417,9 @@ bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, cons
 		recipientID.push_back( NymGetId(varName) );
 
 	for (auto varID : recipientID) {
-		_dbg1("Sending message from" + senderID + "to" + varID );
+		_dbg1("Sending message from " + senderID + " to " + varID );
 
-		string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), senderID, varID, msg);
+		string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), senderID, varID, outMsg);
 
 		// -1 error, 0 failure, 1 success.
 		if (1 != madeEasy.VerifyMessageSuccess(strResponse))
@@ -422,7 +427,7 @@ bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, cons
 			_erro("Failed trying to send the message");
 			return false;
 		}
-		_dbg3("Message was sent successfully.");
+		_dbg3("Message from " + senderID + " to " + varID + " was sent successfully.");
 	}
 	_info("All messages were sent successfully.");
 	return true;

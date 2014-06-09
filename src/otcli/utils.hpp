@@ -218,9 +218,14 @@ extern cConfigManager configManager;
 //TODO class cEnvUtils -> opening editor for multiline text input
 class cEnvUtils {
 	int fd;
+	string mFilename;
+
+	void GetTmpTextFile();
+	void CloseFile();
+	void OpenEditor();
+	const string ReadFromTmpFile();
 public:
-	const string GetTmpTextFile();
-	void CloseFile(const string & filename);
+	const string ComposeMsg();
 };
 // ====================================================================
 
