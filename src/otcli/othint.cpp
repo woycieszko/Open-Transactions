@@ -5,6 +5,7 @@
 #include "otcli.hpp"
 #include "othint.hpp"
 #include "useot.hpp"
+#include "cmd.hpp"
 
 #include "tests.hpp" // TODO Not needed
 
@@ -926,6 +927,7 @@ static char* completionReadlineWrapper(const char *sofar , int number) {
 	if (rl_line_buffer) line = rl_line_buffer;
 	line = line.substr(0, rl_point); // Complete from cursor position
 	nOT::nOTHint::cHintManager hint;
+
 	static vector <string> completions;
 	if (number == 0) {
 		if (dbg) _dbg3("Start autocomplete (during first callback, number="<<number<<")");
@@ -955,13 +957,18 @@ char ** completion(const char* text, int start, int end __attribute__((__unused_
 	return (matches);
 }
 
-void cInteractiveShell::runEditline() {
+void cInteractiveShell::runEditline(shared_ptr<nUse::cUseOT> use) {
 	// nOT::nUse::useOT.Init(); // Init OT on the beginning // disabled to avoid some problems and delay (and valgrid complain)
 
 	char *buf = NULL;
 	my_rl_wrapper_debug = dbg;
 	rl_attempted_completion_function = completion;
 	rl_bind_key('\t',rl_complete);
+
+//	shared_ptr<nNewcli::cCmdParser> parser(new nNewcli::cCmdParser);
+	auto parser = make_shared<nNewcli::cCmdParser>();
+//	parser->Init();
+
 	while((buf = readline("> "))!=NULL) { // <--- readline()
 		std::string word;
 		if (buf) word=buf; // if not-null buf, then assign
@@ -981,6 +988,10 @@ void cInteractiveShell::runEditline() {
 
 		if (cmd.length()) {
 		add_history(cmd.c_str()); // TODO (leaks memory...) but why
+
+//		auto processing = parser->StartProcessing(cmd, use);
+//		processing.Parse();
+//		processing.UseExecute();
 
 		//Execute in BuildTreeOfCommandlines:
 		nOT::nOTHint::cHintManager hint;

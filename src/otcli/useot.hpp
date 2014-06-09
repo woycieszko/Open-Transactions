@@ -7,7 +7,7 @@ Template for new files, replace word "template" and later delete this line here.
 #define INCLUDE_OT_NEWCLI_USEOT
 
 #include "lib_common2.hpp"
-#include "othint.hpp"
+//#include "othint.hpp"
 
 namespace nOT {
 namespace nUse {

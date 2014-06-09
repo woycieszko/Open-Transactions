@@ -46,14 +46,14 @@ int cOTCli::Run(const vector<string> args_without_programname) {
 
 			switch ( gRunOptions.getTRunMode() ){
 				case gRunOptions.eRunModeNormal :
-					shell.runEditline();
+					shell.runEditline(useOT);
 					break;
 				case gRunOptions.eRunModeDemo :
-					shell.runEditline();
+					shell.runEditline(useOT);
 					break;
 				case gRunOptions.eRunModeCurrent :
 					using namespace nOT::nNewcli;
-					nNewcli::cmd_test(useOT);
+					shell.runEditline(useOT);
 					break;
 			}
 		}

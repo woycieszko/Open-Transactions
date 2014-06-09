@@ -6,6 +6,8 @@ All for ot hint functionality goes here
 #ifndef INCLUDE_OT_NEWCLI_othint
 #define INCLUDE_OT_NEWCLI_othint
 
+#include "useot.hpp"
+
 #include "lib_common2.hpp"
 
 namespace nOT {
@@ -43,7 +45,7 @@ class cInteractiveShell {
 	public:
 		cInteractiveShell();
 		void runOnce(const string line);
-		void runEditline();
+		void runEditline(shared_ptr<nUse::cUseOT> use);
 	protected:
 		bool dbg;
 };

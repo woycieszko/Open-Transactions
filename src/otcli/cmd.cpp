@@ -27,7 +27,7 @@ class cCmdParser_pimpl {
 cCmdParser::cCmdParser() 
 : mI( new cCmdParser_pimpl )
 { }
-
+s
 cCmdExecutable::tExitCode Execute1( shared_ptr<cCmdData> , nUse::cUseOT ) {
 	_mark("***Execute1***");
 	return cCmdExecutable::sSuccess;
@@ -817,7 +817,7 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 //	,"ot account ls"
 //	,"ot account mv accountname newaccountname"
 	//ot asset --dryrun
-	,"ot asset new --dryrun"
+	,"ot asset new assetname --dryrun"
 	,"ot asset issue --dryrun"
 	,"ot asset ls --dryrun"
 	//ot asset
