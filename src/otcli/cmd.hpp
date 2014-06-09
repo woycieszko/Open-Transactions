@@ -242,18 +242,22 @@ class cParamInfo {  MAKE_CLASS_NAME("cParamInfo");
 		typedef function< vector<string> ( nUse::cUseOT &, cCmdData &, size_t ) > tFuncHint;
 
 	protected:
+		string mName; // short name
+		string mDescr; // medium description
+
 		tFuncValid funcValid;
 		tFuncHint funcHint;
 
-		string mName; // short name
-
 	public:
 		cParamInfo()=default;
-		//cParamInfo(const string& name) : mName(name) { }
-		cParamInfo(tFuncValid valid, tFuncHint hint);
-		//cParamInfo(const string& name, tFuncValid valid, tFuncHint hint);
+		cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint);
+		cParamInfo(const string &name, const string &descr); // to be used for renaming etc
 
 		operator string() const noexcept { return mName; }
+		std::string getName() const noexcept { return mName; }
+		std::string getName2() const noexcept { return mName+"("+mDescr+")"; }
+
+		cParamInfo operator<<(const cParamInfo &B) const;
 };
 
 

@@ -4,6 +4,7 @@
 #include "cmd.hpp"
 
 #include "lib_common2.hpp"
+#include "ccolor.hpp"
 
 namespace nOT {
 namespace nNewcli {
@@ -40,13 +41,17 @@ void cCmdParser::AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format 
 
 void cCmdParser::PrintUsage() {
 	auto & out = cerr;
+	out << endl;
+	using namespace zkr;
 	for(auto element : mI->mTree) {
 		string name = element.first;
 		shared_ptr<cCmdFormat> format = element.second;
-		out << name << " : " ;
+		out << cc::fore::console << "  ot " << cc::fore::green << name << cc::fore::console	<< " " ;
 		format->PrintUsageShort(out);
 		out << endl;
 	}
+	out << cc::console;
+	out << endl;
 }
 
 void cCmdParser::AddFormat(
@@ -62,13 +67,8 @@ void cCmdParser::AddFormat(
 
 void cCmdParser::Init() {
 	_mark("Init tree");
-	/*
-	typedef function< bool ( cUseOT &, cCmdData &, int, const string &  ) > tFuncValid;
-	typedef function< vector<string> ( cUseOT &, cCmdData &, int, const string &  ) > tFuncHint;
-	cParamInfo(tFuncValid valid, tFuncHint hint);
-	*/
 
-	cParamInfo pNym(
+	cParamInfo pNym( "nym", "nym existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym validation");
 				return use.NymCheckIfExists(data.Var(curr_word_ix + 1));
@@ -78,11 +78,22 @@ void cCmdParser::Init() {
 			return use.NymGetAllNames();
 		}
 	);
-	cParamInfo pNymFrom = pNym;
-	cParamInfo pNymTo = pNym; // TODO suggest not the same nym as was used already before
-	cParamInfo pNymAny = pNym;
 
-	cParamInfo pNymNewName(
+	cParamInfo pNymMy( "nym-my", "one of my own nyms",
+		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
+			_dbg3("Nym validation");
+				return use.NymCheckIfExists(data.Var(curr_word_ix + 1));
+		} ,
+		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
+			_dbg3("Nym hinting");
+			return use.NymGetAllNames();
+		}
+	);
+
+	cParamInfo pNymTo = pNym << cParamInfo("nym-to","nym of recipient that exists on a server"); // TODO suggest not the same nym as was used already before
+	cParamInfo pNymFrom = pNymMy << cParamInfo("nym-from", "one of your nyms, as the sender");
+
+	cParamInfo pNymNewName( "nym-new", "alias name that will be created",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym name validation");
 				return true; // Takes all input TODO check if Nym with tis name exists
@@ -92,8 +103,9 @@ void cCmdParser::Init() {
 			return vector<string> {}; // No hinting for new Nym name
 		}
 	);
+	// ot send cash
 
-	cParamInfo pAccount(
+	cParamInfo pAccount( "account", "account existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Account validation");
 				return use.AccountCheckIfExists(data.Var(curr_word_ix + 1));
@@ -104,7 +116,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pAccountNewName(
+	cParamInfo pAccountNewName( "account-new", "a new account to be created",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Account name validation");
 				return true; // Takes all input TODO check if Account with this name exists
@@ -116,7 +128,7 @@ void cCmdParser::Init() {
 	);
 
 
-	cParamInfo pAsset(
+	cParamInfo pAsset( "asset", "asset that exists on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Asset validation");
 				return use.AssetCheckIfExists(data.Var(curr_word_ix + 1));
@@ -127,7 +139,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pServer(
+	cParamInfo pServer( "server", "identifier of existing server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Server validation");
 				return use.ServerCheckIfExists(data.Var(curr_word_ix + 1));
@@ -138,7 +150,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pOnceInt(
+	cParamInfo pOnceInt( "int", "integer number",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			// TODO check if is any integer
 			// TODO check if not present in data
@@ -149,7 +161,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pSubject(
+	cParamInfo pSubject( "subject", "the subject",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			return true;
 		} ,
@@ -158,7 +170,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pBool(
+	cParamInfo pBool( "yes-no", "true-false",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			return true; // option's value should be null
 		} ,
@@ -167,7 +179,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pText(
+	cParamInfo pText( "text", "text",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			return true;
 		} ,
@@ -181,7 +193,7 @@ void cCmdParser::Init() {
 	//           arg=1 arg=2           arg=3           arg=4
 	// TODO 
 
-	cParamInfo pMsgInIndex(
+	cParamInfo pMsgInIndex( "msg-index-inbox", "index of message in our inbox",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			const int nr = curr_word_ix+1;
 			return use.MsgInCheckIndex(data.Var(nr-1), std::stoi( data.Var(nr)) ); //TODO check if integer
@@ -191,7 +203,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pMsgOutIndex(
+	cParamInfo pMsgOutIndex( "msg-index-outbox", "index of message in our outbox",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			const int nr = curr_word_ix+1;
 			return use.MsgOutCheckIndex(data.Var(nr-1), std::stoi( data.Var(nr)) ); //TODO check if integer
@@ -330,10 +342,10 @@ void cCmdParser::Init() {
 	AddFormat("text decode", {}, {pText}, { {"--dryrun", pBool} },
 			LAMBDA { auto &D=*d; return U.TextDecode(D.v(1, ""), D.has("--dryrun") ); } );
 
-	AddFormat("text encrypt", {pNym}, {pText}, { {"--dryrun", pBool} },
+	AddFormat("text encrypt", {pNymTo}, {pText}, { {"--dryrun", pBool} },
 			LAMBDA { auto &D=*d; return U.TextEncrypt(D.V(1), D.v(2, ""), D.has("--dryrun") ); } );
 
-	AddFormat("text decrypt", {pNym}, {pText}, { {"--dryrun", pBool} },
+	AddFormat("text decrypt", {pNymMy}, {pText}, { {"--dryrun", pBool} },
 			LAMBDA { auto &D=*d; return U.TextDecrypt(D.V(1), D.v(2, ""), D.has("--dryrun") ); } );
 
 	//mI->tree.emplace( cCmdName("msg send") , msg_send_format );
@@ -561,9 +573,22 @@ void cCmdProcessing::UseExecute() {
 
 // ========================================================================================================================
 
-cParamInfo::cParamInfo(tFuncValid valid, tFuncHint hint) 
-	: funcValid(valid), funcHint(hint)
+cParamInfo::cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint) 
+	: mName(name), mDescr(descr), funcValid(valid), funcHint(hint)
 { }
+
+cParamInfo::cParamInfo(const string &name, const string &descr)
+	: mName(name), mDescr(descr)
+{ }
+
+cParamInfo cParamInfo::operator<<(const cParamInfo &B) const {
+	cParamInfo A = *this;
+	A.mName = B.mName;
+	A.mDescr = B.mDescr;
+	if (B.funcValid) A.funcValid = B.funcValid;
+	if (B.funcHint) A.funcHint = B.funcHint;
+	return A;
+}
 
 // ========================================================================================================================
 
@@ -586,29 +611,34 @@ void cCmdFormat::Debug() const {
 }
 
 void cCmdFormat::PrintUsageShort(ostream &out) const {
+	using namespace zkr;
 	bool written=false;
 	{ 
+		out << cc::fore::lightyellow;
 		size_t nr=0;  for(auto var : mVar) { if (nr) out<<" ";  out << (string)var;  ++nr; written=true; }
 	}
 	if (written) out<<" ";
 
 	written=false;
 	{ 
+		out << cc::fore::lightcyan;
 		size_t nr=0;  for(auto var : mVarExt) { if (nr) out<<" ";  out << '[' << (string)var <<']';  ++nr; written=true; }
 	}
 	if (written) out<<" ";
 
 	written=false;
 	{ 
+		out << cc::fore::lightblue;
 		size_t nr=0;  
 		for(auto opt : mOption) { if (nr) out<<" ";  
 			string name = opt.first;
-			out << "[--" << name <<']';  
+			out << "[" << name <<']';  
 			++nr; 
 			written=true;
-		}
+		}		
 	}
 	if (written) out<<" ";
+	out << cc::fore::console;
 }
 
 // ========================================================================================================================
@@ -732,7 +762,7 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 	auto alltest = vector<string>{ ""
 	//ot msg --dryrun
 	,"ot msg help"
-	,"ot msg ls --dryrun"
+/*	,"ot msg ls --dryrun"
 	,"ot msg ls alice --dryrun"
 	,"ot msg sendfrom alice bob --prio 1 --dryrun"
 	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4 --dryrun"
@@ -816,6 +846,7 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 //	,"ot text decode text"
 //	,"ot text encrypt bob text"
 //	,"ot text decrypt text"
+*/
 	};
 	for (auto cmd : alltest) {
 		if (!cmd.length()) continue;
