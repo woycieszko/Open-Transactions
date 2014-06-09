@@ -363,14 +363,17 @@ const vector<string> cUseOT::MsgGetAll() { ///< Get all messages from all Nyms.
 	return vector<string> {};
 
 	for(int i = 0 ; i < OTAPI_Wrap::GetNymCount ();i++) {
-		MsgGetForNym( NymGetName( OTAPI_Wrap::GetNym_ID(i) ) );
+		MsgDisplayForNym( NymGetName( OTAPI_Wrap::GetNym_ID(i) ), false );
 	}
 	return vector<string> {};
 }
 
-const vector<string> cUseOT::MsgGetForNym(const string & nymName) { ///< Get all messages from Nym.
+bool cUseOT::MsgDisplayForNym(const string & nymName, bool dryrun) { ///< Get all messages from Nym.
+	_fact("msg ls " << nymName);
+		if (dryrun) return false;
+
 	if(!Init())
-		return vector<string> {};
+		return false;
 	string nymID = NymGetId(nymName);
 	cout << "===" << nymName << "(" << nymID << ")"  << "===" << endl;
 	cout << "INBOX" << endl;
@@ -384,7 +387,7 @@ const vector<string> cUseOT::MsgGetForNym(const string & nymName) { ///< Get all
 		cout << i << "\t" << OTAPI_Wrap::GetNym_Name(OTAPI_Wrap::GetNym_OutmailRecipientIDByIndex(nymID, i)) << "\t" << OTAPI_Wrap::GetNym_OutmailContentsByIndex (nymID,i) << endl;
 	}
 
-	return vector<string> {};
+	return true;
 }
 
 bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
@@ -445,7 +448,7 @@ bool cUseOT::MsgSend(const string & nymSender, const string & nymRecipient, cons
 	return MsgSend(nymSender, vector<string> {nymRecipient}, msg, subject, prio, dryrun);
 }
 
-const bool cUseOT::MsgInCheckIndex(const string & nymName, const int32_t & nIndex) {
+bool cUseOT::MsgInCheckIndex(const string & nymName, const int32_t & nIndex) {
 	if(!Init())
 			return false;
 	if ( nIndex >= 0 && nIndex < OTAPI_Wrap::GetNym_MailCount(NymGetId(nymName)) ) {
@@ -454,7 +457,7 @@ const bool cUseOT::MsgInCheckIndex(const string & nymName, const int32_t & nInde
 	return false;
 }
 
-const bool cUseOT::MsgOutCheckIndex(const string & nymName, const int32_t & nIndex) {
+bool cUseOT::MsgOutCheckIndex(const string & nymName, const int32_t & nIndex) {
 	if(!Init())
 			return false;
 	if ( nIndex >= 0 && nIndex < OTAPI_Wrap::GetNym_OutmailCount(NymGetId(nymName)) ) {
@@ -463,20 +466,26 @@ const bool cUseOT::MsgOutCheckIndex(const string & nymName, const int32_t & nInd
 	return false;
 }
 
-void cUseOT::MsgInRemoveByIndex(const string & nymName, const int32_t & nIndex) {
-	if(!Init())
-			return;
-	if(OTAPI_Wrap::Nym_RemoveMailByIndex (NymGetId(nymName), nIndex)){
-		_info("Message removed successfully from inbox");
+bool cUseOT::MsgInRemoveByIndex(const string & nymName, const int32_t & index, bool dryrun) {
+	_fact("msg rm " << nymName << " index=" << index);
+	if (dryrun) return false;
+	if(!Init()) return false;
+	if(OTAPI_Wrap::Nym_RemoveMailByIndex (NymGetId(nymName), index)){
+		_info("Message " << index << " removed successfully from " << nymName << " inbox");
+	return true;
 	}
+	return false;
 }
 
-void cUseOT::MsgOutRemoveByIndex(const string & nymName, const int32_t & nIndex) {
-	if(!Init())
-			return;
-	if( OTAPI_Wrap::Nym_RemoveOutmailByIndex(NymGetId(nymName), nIndex) ){
-		_info("Message removed successfully from outbox");
+bool cUseOT::MsgOutRemoveByIndex(const string & nymName, const int32_t & index, bool dryrun) {
+	_fact("msg rm-out " << nymName << " index=" << index);
+		if (dryrun) return false;
+	if(!Init()) return false;
+	if( OTAPI_Wrap::Nym_RemoveOutmailByIndex(NymGetId(nymName), index) ){
+		_info("Message " << index << " removed successfully from " << nymName << " outbox");
+		return true;
 	}
+	return false;
 }
 
 void cUseOT::NymCheck(const string & hisNymID) { // wip

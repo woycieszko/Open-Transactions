@@ -74,13 +74,13 @@ namespace nUse {
 		const string ContractSign(const std::string & nymID, const std::string & contract);
 
 		const vector<string> MsgGetAll();
-		const vector<string> MsgGetForNym(const string & nymName);
+		bool MsgDisplayForNym(const string & nymName, bool dryrun);
 		bool MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun);
 		bool MsgSend(const string & nymSender, const string & nymRecipient, const string & msg);
-		const bool MsgInCheckIndex(const string & nymName, const int32_t & nIndex);
-		const bool MsgOutCheckIndex(const string & nymName, const int32_t & nIndex);
-		void MsgInRemoveByIndex(const string & nymName, const int32_t & nIndex);
-		void MsgOutRemoveByIndex(const string & nymName, const int32_t & nIndex);
+		bool MsgInCheckIndex(const string & nymName, const int32_t & nIndex);
+		bool MsgOutCheckIndex(const string & nymName, const int32_t & nIndex);
+		bool MsgInRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
+		bool MsgOutRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
 
 		void NymCheck(const string & hisNymID);
 		bool NymCheckIfExists(const string & nymName);
