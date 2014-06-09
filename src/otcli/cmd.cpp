@@ -27,7 +27,7 @@ class cCmdParser_pimpl {
 cCmdParser::cCmdParser() 
 : mI( new cCmdParser_pimpl )
 { }
-s
+
 cCmdExecutable::tExitCode Execute1( shared_ptr<cCmdData> , nUse::cUseOT ) {
 	_mark("***Execute1***");
 	return cCmdExecutable::sSuccess;
