@@ -55,7 +55,7 @@ void cUseOT::LoadDefaults() {
 
 bool cUseOT::Init() {
 	if (OTAPI_error) return false;
-	if (OTAPI_loaded) { _note("OTAPI was already initialized"); return true; }
+	if (OTAPI_loaded) return true;
 	try {
 		if (!OTAPI_Wrap::AppInit()) {// Init OTAPI
 			_erro("Error while initializing wrapper");
@@ -171,28 +171,35 @@ bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
 	OT_ME madeEasy;
 
 	int32_t serverCount = OTAPI_Wrap::GetServerCount();
+
 	if (all) {
-		int32_t accountsChecked = 0;
+		int32_t accountsRetrieved = 0;
 		int32_t accountCount = OTAPI_Wrap::GetAccountCount();
+
+		if (accountCount == 0){
+			_warn("No accounts to retrieve");
+			return true;
+		}
+
 		for (int32_t accountIndex = 0; accountIndex < accountCount; ++accountIndex) {
 			ID accountID = OTAPI_Wrap::GetAccountWallet_ID(accountIndex);
 			ID accountServerID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
 			ID accountNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
 			if ( madeEasy.retrieve_account(accountServerID, accountNymID, accountID, true) ) { // forcing download
 				_info("Account " + accountName + "(" + accountID +  ")" + " retrieval success from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
-				++accountsChecked;
-			}else {
+				++accountsRetrieved;
+			}else
 				_erro("Account " + accountName + "(" + accountID +  ")" + " retrieval failure from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
-			}
 		}
-		if (accountsChecked == accountCount) {
-			_info("All accounts were successfully retrieved");
+		string count = to_string(accountsRetrieved) + "/" + to_string(accountCount);
+		if (accountsRetrieved == accountCount) {
+			_info("All accounts were successfully retrieved " << count);
 			return true;
-		} else if (accountsChecked == 0) {
-			_erro("Accounts retrieval failure");
+		} else if (accountsRetrieved == 0) {
+			_erro("Accounts retrieval failure " << count);
 			return false;
 		} else {
-			_erro("Some accounts cannot be retrieved");
+			_erro("Some accounts cannot be retrieved " << count);
 			return true;
 		}
 	}
@@ -207,7 +214,7 @@ bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
 		_warn("Account " + accountName + "(" + accountID +  ")" + " retrieval failure from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
 		return false;
 	}
-	return true; //TODO
+	return false;
 }
 
 bool cUseOT::AccountRename(const string & oldAccountName, const string & newAccountName, bool dryrun) {
@@ -692,38 +699,57 @@ bool cUseOT::NymRefresh(const string & nymName, bool all, bool dryrun) { //TODO 
 	if(dryrun) return false;
 	if(!Init()) return false;
 
-//	TODO make like account refresh
-
 	OT_ME madeEasy;
 	int32_t serverCount = OTAPI_Wrap::GetServerCount();
 	if (all) {
+		int32_t nymsRetrieved = 0;
 		int32_t nymCount = OTAPI_Wrap::GetNymCount();
-		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){ // Working for all available servers!
-			for (int32_t nymIndex = 0; nymIndex < nymCount; ++nymIndex){
+
+		if (nymCount == 0){
+			_warn("No Nyms to retrieve");
+			return true;
+		}
+
+		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex) { // FIXME Working for all available servers!
+			for (int32_t nymIndex = 0; nymIndex < nymCount; ++nymIndex) {
 				ID nymID = OTAPI_Wrap::GetNym_ID(nymIndex);
 				ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
-				if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)){
-					if ( madeEasy.retrieve_nym(nymID, serverID, true) ){ // forcing download
-						_info("Nym " + nymName + "(" + nymID +  ")" + " retrieval success from server " + ServerGetName(serverID) + "(" + serverID +  ")");
-					}
-					_warn("Nym " + nymName + "(" + nymID +  ")" + " retrieval failure from server " + ServerGetName(serverID) + "(" + serverID +  ")");
+				if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)) {
+					if ( madeEasy.retrieve_nym(serverID, nymID, true) ){ // forcing download
+						_info("Nym " + NymGetName(nymID) + "(" + nymID +  ")" + " retrieval success from server " + ServerGetName(serverID) + "(" + serverID +  ")");
+						++nymsRetrieved;
+					} else
+					_erro("Nym " + NymGetName(nymID) + "(" + nymID +  ")" + " retrieval failure from server " + ServerGetName(serverID) + "(" + serverID +  ")");
 				}
 			}
+		}
+		string count = to_string(nymsRetrieved) + "/" + to_string(nymCount);
+		if (nymsRetrieved == nymCount) {
+			_info("All Nyms were successfully retrieved " << count);
+			return true;
+		} else if (nymsRetrieved == 0) {
+			_erro("Nyms retrieval failure " << count);
+			return false;
+		} else {
+			_erro("Some Nyms cannot be retrieved (not registered?) " << count); //TODO check if nym is regstered on server
+			return true;
 		}
 	}
 	else {
 		ID nymID = NymGetId(nymName);
-		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){ // Working for all available servers!
+		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex) { // Working for all available servers!
 			ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
-			if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)){
-				if ( madeEasy.retrieve_nym(nymID, serverID, true) ){ // forcing download
+			if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)) {
+				if ( madeEasy.retrieve_nym(serverID,nymID, true) ) { // forcing download
 					_info("Nym " + nymName + "(" + nymID +  ")" + " retrieval success from server " + ServerGetName(serverID) + "(" + serverID +  ")");
+					return true;
 				}
 				_warn("Nym " + nymName + "(" + nymID +  ")" + " retrieval failure from server " + ServerGetName(serverID) + "(" + serverID +  ")");
+				return false;
 			}
 		}
 	}
-	return true; //TODO
+	return false;
 }
 
 bool cUseOT::NymRegister(const string & nymName, const string & serverName, bool dryrun) {
@@ -906,7 +932,7 @@ bool cUseOT::ServerDisplayAllNames(bool dryrun) {
 	for(int i = 0 ; i < OTAPI_Wrap::GetServerCount ();i++) {
 		servers.push_back( OTAPI_Wrap::GetServer_Name( OTAPI_Wrap::GetServer_ID(i) ) );
 	}
-	nUtils::DisplayVector(cout, servers);
+	nUtils::DisplayVectorEndl(cout, servers);
 	return true;
 }
 
