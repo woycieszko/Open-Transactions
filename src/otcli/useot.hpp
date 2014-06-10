@@ -102,6 +102,8 @@ namespace nUse {
 		EXEC bool NymRefresh(const string & nymName, bool all, bool dryrun);
 		EXEC bool NymRegister(const string & nymName, const string & serverName, bool dryrun);
 		EXEC bool NymRemove(const string & nymName, bool dryrun);
+		bool NymSetName(const string & nymID, const string & newNymName);
+		bool NymRename(const string & oldNymName, const string & newNymName, bool dryrun);
 		EXEC bool NymSetDefault(const string & nymName, bool dryrun);
 
 		EXEC bool ServerAdd(bool dryrun); ///< Add new server contract

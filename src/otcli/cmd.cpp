@@ -310,6 +310,9 @@ void cCmdParser::Init() {
 	AddFormat("nym ls", {}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.NymDisplayAllNames( D.has("--dryrun") ); } );
 
+	AddFormat("nym rename", {pNymMy, pNymNewName}, {}, { {"--dryrun", pBool} },
+			LAMBDA { auto &D=*d; return U.NymRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
+
 	//======== ot account ========
 
 	AddFormat("account new", {pAsset, pAccountNewName}, {}, { {"--dryrun", pBool} },
@@ -327,7 +330,7 @@ void cCmdParser::Init() {
 	AddFormat("account ls", {}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountDisplayAllNames( D.has("--dryrun") ); } );
 
-	AddFormat("account mv", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
+	AddFormat("account rename", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
 
 	AddFormat("account transferfrom", {pAccountFrom, pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },

@@ -613,6 +613,7 @@ bool cUseOT::NymCreate(const string & nymName, bool dryrun) {
 		return false;
 	}
 	// Set the Name of the new Nym.
+
 	if ( !OTAPI_Wrap::SetNym_Name(nymID, nymID, nymName) ) { //Signer Nym? When testing, there is only one nym, so you just pass it twice. But in real production, a user will have a default signing nym, the same way that he might have a default signing key in PGP, and that must be passed in whenever he changes the name on any of the other nyms in his wallet. (In order to properly sign and save the change.)
 		_erro("Failed trying to name new Nym: " << nymID);
 		return false;
@@ -810,6 +811,30 @@ bool cUseOT::NymRemove(const string & nymName, bool dryrun) {
 		}
 	}
 	_warn("Nym " << nymName  <<  "(" << nymID << ")" << " cannot be removed");
+	return false;
+}
+
+bool cUseOT::NymSetName(const string & nymID, const string & newNymName) { //TODO: passing to function: const string & nymName, const string & signerNymName,
+	if(!Init()) return false;
+
+	if ( !OTAPI_Wrap::SetNym_Name(nymID, nymID, newNymName) ) {
+		_erro("Failed trying to set name " << newNymName << " to nym " << nymID);
+		return false;
+	}
+	_info("Set Nym " << nymID << " name to " << newNymName);
+	return true;
+}
+
+bool cUseOT::NymRename(const string & oldNymName, const string & newNymName, bool dryrun) {
+	_fact("nym mv from " << oldNymName << " to " << newNymName);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	if( NymSetName(NymGetId(oldNymName), newNymName) ) {
+		_info("Account " << oldNymName << " renamed to " << newNymName);
+		return true;
+	}
+	_erro("Failed to rename account " << oldNymName << " to " << newNymName);
 	return false;
 }
 
