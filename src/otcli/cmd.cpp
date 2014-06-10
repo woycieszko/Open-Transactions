@@ -238,7 +238,7 @@ void cCmdParser::Init() {
 	auto this_shared_do_not_use = shared_from_this(); // make_shared<cCmdProcessing>(this);
 	weak_ptr<cCmdParser> this_weak( this_shared_do_not_use );
 
-	AddFormat("msg help", {}, {}, {},
+	AddFormat("help", {}, {}, {},
 		[this_weak] (tData d, tUse U) -> tExit { auto &D=*d; 
 			shared_ptr<cCmdParser> this_lock( this_weak );
 			this_lock->PrintUsage();
@@ -424,24 +424,35 @@ void cCmdProcessing::_Parse() {
 	// mCommandLine = ot, msg, sendfrom, alice, bob, hello
 	// mFormat.erase ? // remove old format, we parse something new [doublecheck]
 
-	if (!mCommandLine.empty()) {
-		if (mCommandLine.at(0) != "ot") {
-			_warn("Command for processing is mallformed");
-		}
-		mCommandLine.erase( mCommandLine.begin() ); // delete the first "ot"
-	} else {
-		_warn("Command for processing is empty");
+	if (mCommandLine.empty()) {
+		_warn("Command for processing is totally empty");
+		return ; // <--- *** return ***
 	}
+
+	if (mCommandLine.at(0) == "help") mCommandLine.insert( mCommandLine.begin() , "ot"); // change "help" to "ot help"
+
+	if (mCommandLine.at(0) != "ot") {
+		_warn("Command for processing is mallformed");
+	}
+	mCommandLine.erase( mCommandLine.begin() ); // delete the first "ot" ***
 	// mCommandLine = msg, sendfrom, alice, bob, hello
-	_dbg1("Parsing: " << DbgVector(mCommandLine) );
+	_dbg1("Parsing (after erasing ot) : " << DbgVector(mCommandLine) );
+
+	if (mCommandLine.empty()) {
+		_warn("Command for processing is empty (after erasing ot)");
+		return ; // <--- *** return ***
+	}
 
 	_dbg3("Alloc data");  
 	mData = std::make_shared<cCmdData>();
+	_dbg3("Got new data");
 
 	int phase=0; // 0: cmd name  1:var, 2:varExt  3:opt   9:end
 	try {
-
-		const string name = mCommandLine.at(0) + " " + mCommandLine.at(1) ; // "msg send"
+		const string name = mCommandLine.at(0) 
+			+ (   (mCommandLine.size()<=1)  ?  "" : (" " + mCommandLine.at(1))   ); // this is second-word plus space, or nothing
+		// "msg send" or "help"
+		_dbg3("Name of command is: " << name);
 		mFormat = mParser->FindFormat( name );
 		_info("Got format for name="<<name);
 
@@ -563,8 +574,15 @@ void cCmdProcessing::_Parse() {
 		_note("mVarExt parsed: " + DbgVector(mData->mVarExt));
 		_note("mOption parsed  " + DbgMap(mData->mOption));
  
-	} catch (cErrParse &e) {
+	} 
+	catch (cErrParse &e) {
 		_warn("Command can not be parsed " << e.what());
+	}
+	catch (std::exception &e) {
+		_erro("Internal error in parser code " << e.what() << " while parsing:" << DbgVector( mCommandLine ) );
+	}
+	catch (myexception &e) {
+		_erro("Internal error in parser code " << e.what() << " while parsing:" << DbgVector( mCommandLine ) );
 	}
 }
 

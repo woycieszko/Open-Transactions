@@ -982,7 +982,10 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 	auto parser = make_shared<nNewcli::cCmdParser>();
 	parser->Init();
 
-	while((buf = readline("> "))!=NULL) { // <--- readline()
+
+	cout << endl << "For help type: ot help" << endl;
+
+	while((buf = readline("ot command> "))!=NULL) { // <--- readline()
 		std::string word;
 		if (buf) word=buf; // if not-null buf, then assign
 		if (buf) { free(buf); buf=NULL; }
@@ -1000,15 +1003,10 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 		if (cmd_trim=="q") break;
 
 		if (cmd.length()) {
-		add_history(cmd.c_str()); // TODO (leaks memory...) but why
-
-		auto processing = parser->StartProcessing(cmd, use);
-		processing.Parse();
-		processing.UseExecute();
-
-		//Execute in BuildTreeOfCommandlines:
-//		nOT::nOTHint::cHintManager hint;
-//		hint.AutoCompleteEntire(cmd);
+			add_history(cmd.c_str()); // TODO (leaks memory...) but why
+			auto processing = parser->StartProcessing(cmd, use); // <---
+			processing.Parse(); // <---
+			processing.UseExecute(); // <---
 		}
 	}
 	if (buf) { free(buf); buf=NULL; }
