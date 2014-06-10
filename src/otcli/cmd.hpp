@@ -95,6 +95,9 @@ E.g. parsing the input "msg sendfrom rafal dorota 5000" and pointing to standard
 */
 class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLASS_NAME("cCmdProcessing");
 	protected:
+		enum class tState { never=0, failed, succeeded  } ;
+		tState mStateParse, mStateValidate, mStateExecute;
+
 		shared_ptr<cCmdParser> mParser; // our "parent" parser to use here
 
 		vector<string> mCommandLine; // the words of command to be parsed
@@ -102,17 +105,21 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 		shared_ptr<cCmdData> mData; // our parsed command as data; NULL if error/invalid
 		shared_ptr<cCmdFormat> mFormat; // the selected CmdFormat template; NULL if error/invalid
 
-		shared_ptr<nUse::cUseOT> &mUse; // this will be used e.g. in Parse() - passed to called validations, in UseExecute and UseComplete etc
+		shared_ptr<nUse::cUseOT> mUse; // this will be used e.g. in Parse() - passed to called validations, in UseExecute and UseComplete etc
 
-		void _Parse(); 
+		virtual void _Parse(); // throw if failed
+		virtual void _Validate(); // throw if failed
+		virtual void _UseExecute(); // throw if failed
 
 	public:
-		cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> commandLine, shared_ptr<nUse::cUseOT> &use );
+		cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> commandLine, shared_ptr<nUse::cUseOT> use );
+		virtual ~cCmdProcessing();
 
-		void Parse(); // parse into mData, mFormat
+		virtual void Parse(); // parse into mData, mFormat
+		virtual void Validate(); // detects validation errors; Might report the error (or maybe throw or save status in *this, depending on this->mUse settings)
+		virtual void UseExecute(); // execute the command
 
-		vector<string> UseComplete(); 
-		void UseExecute();
+		vector<string> UseComplete(); // hint the possible completions (aka tab-completion)
 };
 
 /**
@@ -138,6 +145,10 @@ class cCmdFormat {  MAKE_CLASS_NAME("cCmdFormat");
 
 		void Debug() const;
 		void PrintUsageShort(ostream &out) const;
+
+		size_t SizeAllVar() const ; // return size of required mVar + optional mVarExt
+
+		cParamInfo GetParamInfo(int nr) const;		
 };
 
 /**
@@ -190,6 +201,8 @@ class cCmdData {  MAKE_CLASS_NAME("cCmdData");
 		string Opt1(const string& name) const throw(cErrArgNotFound); // --prio 100 same but requires the 1st element
 		
 		bool IsOpt(const string &name) const throw(cErrArgIllegal); // --dryrun
+
+		size_t SizeAllVar() const ; // return size of required mVar + optional mVarExt
 		
 	public: // aliases ; I hope it will be fully optimized out/elided (TODO if not then copy/paste code of above methods)
 	// public? compiler bug? would prefer to have it as private, but lambdas made in cCmdProcessing should access this fields
@@ -261,6 +274,9 @@ class cParamInfo {  MAKE_CLASS_NAME("cParamInfo");
 		std::string getName2() const noexcept { return mName+"("+mDescr+")"; }
 
 		cParamInfo operator<<(const cParamInfo &B) const;
+
+		tFuncValid GetFuncValid() const { return funcValid; }
+		tFuncHint GetFuncHint() const { return funcHint; }
 };
 
 

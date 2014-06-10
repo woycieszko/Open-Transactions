@@ -982,7 +982,10 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 	auto parser = make_shared<nNewcli::cCmdParser>();
 	parser->Init();
 
-	while((buf = readline("> "))!=NULL) { // <--- readline()
+
+	cout << endl << "For help type: ot help" << endl;
+
+	while ((buf = readline("ot command> "))!=NULL) { // <--- readline()
 		std::string word;
 		if (buf) word=buf; // if not-null buf, then assign
 		if (buf) { free(buf); buf=NULL; }
@@ -1000,17 +1003,22 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 		if (cmd_trim=="q") break;
 
 		if (cmd.length()) {
-		add_history(cmd.c_str()); // TODO (leaks memory...) but why
+			add_history(cmd.c_str()); // TODO (leaks memory...) but why
 
-		auto processing = parser->StartProcessing(cmd, use);
-		processing.Parse();
-		processing.UseExecute();
-
-		//Execute in BuildTreeOfCommandlines:
-//		nOT::nOTHint::cHintManager hint;
-//		hint.AutoCompleteEntire(cmd);
-		}
-	}
+			try {
+				auto processing = parser->StartProcessing(cmd, use); // <---
+				processing.Parse(); // <---
+				processing.Validate(); // <---
+				processing.UseExecute(); // <---
+			} 
+			catch (const myexception &e) { 
+				cerr<<"Could not execute your command ("<<cmd<<")"<<endl; e.Report(); 
+			} 
+			catch (const std::exception &e) { 
+				cerr<<"Could not execute your command ("<<cmd<<") - caused internal error: " << e.what(); 
+			} 
+		} // length
+	} // while
 	if (buf) { free(buf); buf=NULL; }
 	clear_history(); // http://cnswww.cns.cwru.edu/php/chet/readline/history.html#IDX11
 }

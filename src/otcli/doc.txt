@@ -5,6 +5,15 @@
 This file here is primarly for core developers of otcli 
 (how ever it could include some information that you can find interesting too).
 
+=== PROGRAM STRUCTURE ===
+
+main() 
+-> cOTCli::Run() 
+--> shell.runEditline(useOT); - main loop that is a shell that reads commands
+---> on ENTER: cCmdParser() - Parse(), Validate(), UseExecute()
+---> on TAB: cCmdParser() - UseComplete()
+nNewcli::cmd_test(useOT);
+
 === TEST CASE ===
 
 Sending/receiving message
