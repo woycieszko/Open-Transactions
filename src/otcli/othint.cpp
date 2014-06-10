@@ -981,7 +981,9 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 
 	auto parser = make_shared<nNewcli::cCmdParser>();
 	parser->Init();
-
+	
+	int said_help=0, help_needed=0;
+	const int opt_repeat_help_each_nth_time = 5; // how often to remind user to run ot help on error
 
 	cout << endl << "For help type: ot help" << endl;
 
@@ -1005,18 +1007,22 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 		if (cmd.length()) {
 			add_history(cmd.c_str()); // TODO (leaks memory...) but why
 
+			bool all_ok=false;
 			try {
 				auto processing = parser->StartProcessing(cmd, use); // <---
-				processing.Parse(); // <---
-				processing.Validate(); // <---
-				processing.UseExecute(); // <---
+				processing.UseExecute(); // <--- ***
+				all_ok=true;
 			} 
 			catch (const myexception &e) { 
-				cerr<<"Could not execute your command ("<<cmd<<")"<<endl; e.Report(); 
+				cerr<<"ERROR: Could not execute your command ("<<cmd<<")"<<endl; e.Report();  cerr<<endl;
 			} 
 			catch (const std::exception &e) { 
-				cerr<<"Could not execute your command ("<<cmd<<") - caused internal error: " << e.what(); 
+				cerr<<"ERROR: Could not execute your command ("<<cmd<<") - it triggered internal error: " << e.what() << endl; 
 			} 
+			if (!all_ok) { // if there was a problem
+				if ((!said_help) || (!(help_needed % opt_repeat_help_each_nth_time))) { cerr<<"If lost, type command 'ot help'."<<endl; ++said_help; }
+				++help_needed;
+			}
 		} // length
 	} // while
 	if (buf) { free(buf); buf=NULL; }

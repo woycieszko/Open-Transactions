@@ -464,7 +464,7 @@ void cCmdProcessing::_Parse() {
 
 	if (mCommandLine.empty()) {
 		_warn("Command for processing is totally empty");
-		return ; // <--- *** return ***
+		throw cErrParseSyntax("Command was empty"); // <--- THROW
 	}
 
 	if (mCommandLine.at(0) == "help") mCommandLine.insert( mCommandLine.begin() , "ot"); // change "help" to "ot help"
@@ -478,7 +478,7 @@ void cCmdProcessing::_Parse() {
 
 	if (mCommandLine.empty()) {
 		_warn("Command for processing is empty (after erasing ot)");
-		return ; // <--- *** return ***
+		throw cErrParseSyntax("Command was empty (besides prefix)"); // <--- THROW
 	}
 
 	_dbg3("Alloc data");  
@@ -615,12 +615,15 @@ void cCmdProcessing::_Parse() {
 	} 
 	catch (cErrParse &e) {
 		_warn("Command can not be parsed " << e.what());
+		throw ;
 	}
 	catch (std::exception &e) {
 		_erro("Internal error in parser code " << e.what() << " while parsing:" << DbgVector( mCommandLine ) );
+		throw ;
 	}
 	catch (myexception &e) {
 		_erro("Internal error in parser code " << e.what() << " while parsing:" << DbgVector( mCommandLine ) );
+		throw ;
 	}
 }
 
@@ -952,8 +955,6 @@ void _cmd_test( shared_ptr<cUseOT> use ) {
 			if (!cmd.length()) continue;
 			_mark("====== Testing command: " << cmd );
 			auto processing = parser->StartProcessing(cmd, use);
-			processing.Parse();
-			processing.Validate();
 			processing.UseExecute();
 		} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 	}
