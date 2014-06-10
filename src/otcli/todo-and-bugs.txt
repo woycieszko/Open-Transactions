@@ -17,6 +17,7 @@ BUGS MISC
 TODO
 ====================================================================
 
+* TODO:nrix write conversion between numbers (1,2,3) and indexes (0,1,2) based on classes, with assert for over/under-flow and versusi int and size_t sizes
 * debug: configurable debug level (from autostart)
 * debug: testcases should use this debug level
 * implement more commands for othint + execution

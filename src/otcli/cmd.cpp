@@ -374,7 +374,6 @@ void cCmdParser::Init() {
 */
 }
 
-
 cCmdProcessing cCmdParser::StartProcessing(const vector<string> &words, shared_ptr<nUse::cUseOT> use ) {
 	return cCmdProcessing( shared_from_this() , words , use );
 }
@@ -404,17 +403,56 @@ cCmdName::operator std::string() const { return mName; }
 
 // ========================================================================================================================
 
-
-cCmdProcessing::cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> commandLine, shared_ptr<nUse::cUseOT> &use )
-	: mParser(parser), mCommandLine(commandLine), mUse(use)
+cCmdProcessing::cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> commandLine, shared_ptr<nUse::cUseOT> use )
+: 
+mStateParse(tState::never), mStateValidate(tState::never), mStateExecute(tState::never),
+mParser(parser), mCommandLine(commandLine), mUse(use)
 { 
-	_dbg2("Creating processing of: " << DbgVector(commandLine) );
-	_dbg2("Working on use=" << use->DbgName() );
+	_dbg2("Creating processing of: " << DbgVector(commandLine) << " with use=" << use->DbgName() );
+}
+
+cCmdProcessing::~cCmdProcessing() 
+{ }
+
+void cCmdProcessing::Validate() { 
+	if (mStateValidate != tState::never) { _dbg1("Validation was done already"); return; }
+	mStateValidate = tState::failed; // assumed untill succeed below
+	try {
+		_Validate();
+		mStateValidate = tState::succeeded;
+		_dbg1("Validation succeeded");
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+}
+
+void cCmdProcessing::_Validate() { 
+	if (mStateParse != tState::succeeded) Parse();
+	if (mStateParse != tState::succeeded) { _dbg1("Failed to parse."); }
+
+	if (!mData) { _warn("Can not validate - there is no mData"); return; }
+	if (!mFormat) { _warn("Can not validate - there is no mData"); return; }
+
+	const auto sizeAll = mData->SizeAllVar();
+	_dbg2("Will validate all variables, size=" << sizeAll );
+	
+	for (size_t nr=1; nr<=sizeAll; ++nr) { // TODO:nrix 
+		auto var = mData->Var(nr); // get the var
+		const cParamInfo & info = mFormat->GetParamInfo(nr);
+		auto func = info.GetFuncValid();
+		bool ok = func( *mUse, *mData, nr-1 ); // ***
+		if (!ok) { 
+			const string err = ToStr("Validation failed at nr=") + ToStr(nr) + " for var=" + ToStr(var); 
+			_warn(err);
+			throw myexception(err);
+		}
+	}
 }
 
 void cCmdProcessing::Parse() {
+	if (mStateParse != tState::never) { _dbg1("Already parsed"); return; }
+	mStateParse = tState::failed; // assumed untill succeed below
 	try {
 		_Parse();
+		mStateParse = tState::succeeded;
 	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 }
 
@@ -591,7 +629,21 @@ vector<string> cCmdProcessing::UseComplete() {
 	return ret;
 }
 
-void cCmdProcessing::UseExecute() {
+void cCmdProcessing::UseExecute() { // TODO write as a template for all the 3 wrappres that set state ??
+	if (mStateParse != tState::succeeded) Parse();
+	if (mStateValidate != tState::succeeded) Validate();
+	if (mStateParse != tState::succeeded) { _dbg1("Failed to parse."); }
+	if (mStateValidate != tState::succeeded) { _dbg1("Failed to validate."); }
+
+	if (mStateExecute != tState::never) { _dbg1("Exec was done already"); return; }
+	mStateExecute = tState::failed; // assumed untill succeed below
+	try {
+		_UseExecute();
+		mStateExecute = tState::succeeded;
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+}
+
+void cCmdProcessing::_UseExecute() {
 	if (!mFormat) { _warn("Can not execute this command - mFormat is empty"); return; }
 	cCmdExecutable exec = mFormat->getExec();
 	exec( mData , *mUse ); 
@@ -623,6 +675,24 @@ cCmdFormat::cCmdFormat(const cCmdExecutable &exec, const tVar &var, const tVar &
 	:	mExec(exec), mVar(var), mVarExt(varExt), mOption(opt)
 {
 	_dbg1("Created new format");
+}
+
+cParamInfo cCmdFormat::GetParamInfo(int nr) const {
+	// similar to cCmdData::VarAccess()
+	if (nr <= 0) throw myexception("Illegal number for var, nr="+ToStr(nr));
+	const int ix = nr - 1;
+	if (ix >= mVar.size()) { // then this is an extra argument
+		const int ix_ext = ix - mVar.size();
+		if (ix_ext >= mVarExt.size()) { // then this var number does not exist - out of range
+			throw myexception("Missing argument: out of range number for var, nr="+ToStr(nr)+" ix="+ToStr(ix)+" ix_ext="+ToStr(ix_ext)+" vs size="+ToStr(mVarExt.size()));
+		}
+		return mVarExt.at(ix_ext);
+	}
+	return mVar.at(ix);
+}
+
+size_t cCmdFormat::SizeAllVar() const { // return size of required mVar + optional mVarExt
+	return mVar.size() + mVarExt.size();
 }
 
 cCmdExecutable cCmdFormat::getExec() const {
@@ -681,6 +751,10 @@ cCmdExecutable::cCmdExecutable(tFunc func) : mFunc(func) { }
 const cCmdExecutable::tExitCode cCmdExecutable::sSuccess = 0; 
 
 // ========================================================================================================================
+
+size_t cCmdData::SizeAllVar() const { // return size of required mVar + optional mVarExt
+	return mVar.size() + mVarExt.size();
+}
 
 string cCmdData::VarAccess(int nr, const string &def, bool doThrow) const throw(cErrArgNotFound) { // see [nr] ; if doThrow then will throw on missing var, else returns def
 	if (nr <= 0) throw cErrArgIllegal("Illegal number for var, nr="+ToStr(nr)+" (1,2,3... is expected)");
@@ -786,11 +860,11 @@ void _cmd_test( shared_ptr<cUseOT> use ) {
 
 	auto alltest = vector<string>{ ""
 	//ot msg --dryrun
-	,"ot msg help"
+	,"ot help"
 /*	,"ot msg ls --dryrun"
-	,"ot msg ls alice --dryrun"
+	,"ot msg ls alice --dryrun"*/
 	,"ot msg sendfrom alice bob --prio 1 --dryrun"
-	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4 --dryrun"
+/*	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4 --dryrun"
 	,"ot msg sendfrom alice bob message subject --cc eve --cc mark --bcc john --prio 4 --dryrun"
 	,"ot msg sendto bob hello --cc eve --cc mark --bcc john --prio 4 --dryrun"
 	,"ot msg rm alice 0 --dryrun"
@@ -879,6 +953,7 @@ void _cmd_test( shared_ptr<cUseOT> use ) {
 			_mark("====== Testing command: " << cmd );
 			auto processing = parser->StartProcessing(cmd, use);
 			processing.Parse();
+			processing.Validate();
 			processing.UseExecute();
 		} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 	}
