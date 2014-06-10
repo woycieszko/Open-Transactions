@@ -42,10 +42,15 @@ class cHintManager {
 // ====================================================================
 
 class cInteractiveShell {
+	protected:
+		void _runEditline(shared_ptr<nUse::cUseOT> use);
+		void _runOnce(const string line);
+
 	public:
 		cInteractiveShell();
 		void runOnce(const string line);
 		void runEditline(shared_ptr<nUse::cUseOT> use);
+
 	protected:
 		bool dbg;
 };

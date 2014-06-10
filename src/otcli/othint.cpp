@@ -889,11 +889,17 @@ cInteractiveShell::cInteractiveShell()
 :dbg(false)
 { }
 
-void cInteractiveShell::runOnce(const string line) { // used with bash autocompletion
+void cInteractiveShell::_runOnce(const string line) { // used with bash autocompletion
 	gCurrentLogger.setDebugLevel(100);
 	nOT::nOTHint::cHintManager hint;
 	vector<string> out = hint.AutoCompleteEntire(line);
 	nOT::nUtils::DisplayVectorEndl(std::cout, out);
+}
+
+void cInteractiveShell::runOnce(const string line) { // used with bash autocompletion
+	try {
+		runOnce(line);
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 }
 
 extern bool my_rl_wrapper_debug; // external
@@ -960,6 +966,12 @@ char ** completion(const char* text, int start, int end __attribute__((__unused_
 }
 
 void cInteractiveShell::runEditline(shared_ptr<nUse::cUseOT> use) {
+	try {
+		_runEditline(use);
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+}
+
+void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 	// nOT::nUse::useOT.Init(); // Init OT on the beginning // disabled to avoid some problems and delay (and valgrid complain)
 
 	char *buf = NULL;

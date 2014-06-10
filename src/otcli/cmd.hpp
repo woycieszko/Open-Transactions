@@ -104,6 +104,8 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 
 		shared_ptr<nUse::cUseOT> &mUse; // this will be used e.g. in Parse() - passed to called validations, in UseExecute and UseComplete etc
 
+		void _Parse(); 
+
 	public:
 		cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> commandLine, shared_ptr<nUse::cUseOT> &use );
 
