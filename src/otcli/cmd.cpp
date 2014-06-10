@@ -28,6 +28,8 @@ cCmdParser::cCmdParser()
 : mI( new cCmdParser_pimpl )
 { }
 
+cCmdParser::~cCmdParser() { } // let's instantize default destr in all TUs so compilation will fail (without this line) on unique_ptr on not-complete types trololo - B. Stroustrup
+
 cCmdExecutable::tExitCode Execute1( shared_ptr<cCmdData> , nUse::cUseOT ) {
 	_mark("***Execute1***");
 	return cCmdExecutable::sSuccess;

@@ -76,6 +76,7 @@ class cCmdParser : public enable_shared_from_this<cCmdParser> { MAKE_CLASS_NAME(
 
 	public:
 		cCmdParser();
+		~cCmdParser(); // let's instantize default destr in all TUs so compilation will fail (without this line) on unique_ptr on not-complete types trololo - B. Stroustrup
 
 		cCmdProcessing StartProcessing(const vector<string> &words, shared_ptr<nUse::cUseOT> use );
 		cCmdProcessing StartProcessing(const string &words, shared_ptr<nUse::cUseOT> use );
