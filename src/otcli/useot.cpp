@@ -164,7 +164,7 @@ bool cUseOT::AccountRemove(const string & accountName, bool dryrun) { ///<
 }
 
 bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
-	_fact("account refresh " << accountName);
+	_fact("account refresh " << accountName << " all=" << all);
 	if(dryrun) return false;
 	if(!Init()) return false;
 
@@ -290,11 +290,10 @@ bool cUseOT::AccountDisplayAllNames(bool dryrun) {
 	if(!Init()) return false;
 
 	_dbg3("Retrieving all accounts names");
-	vector<string> accounts;
-	for(int i = 0 ; i < OTAPI_Wrap::GetAccountCount ();i++) {
-		accounts.push_back(OTAPI_Wrap::GetAccountWallet_Name ( OTAPI_Wrap::GetAccountWallet_ID (i)));
+	for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetAccountCount();i++) {
+		ID accountID = OTAPI_Wrap::GetAccountWallet_ID(i);
+		nUtils::DisplayStringEndl(cout, AccountGetName( accountID ) + " - " + accountID );
 	}
-	nUtils::DisplayVector(cout, accounts);
 	return true;
 }
 
@@ -304,6 +303,28 @@ bool cUseOT::AccountSetDefault(const string & accountName, bool dryrun) {
 	if(!Init()) return false;
 
 	mDefaultIDs.at("AccountID") = AccountGetId(accountName);
+	return true;
+}
+
+bool cUseOT::AccountTransfer(const string & accountFrom, const string & accountTo, const int64_t & amount, const string & note, bool dryrun) {
+	_fact("account transfer  from " << accountFrom << " to " << accountTo << " amount=" << amount << " note=" << note);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	OT_ME madeEasy;
+
+	ID accountFromID = AccountGetId(accountFrom);
+	ID accountToID = AccountGetId(accountTo);
+	ID accountServerID = OTAPI_Wrap::GetAccountWallet_ServerID(accountFromID);
+	ID accountNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountFromID);
+
+	string response = madeEasy.send_transfer(accountServerID, accountNymID, accountFromID, accountToID, amount, note);
+
+	// -1 error, 0 failure, 1 success.
+	if (1 != madeEasy.VerifyMessageSuccess(response)) {
+		_erro("Failed to send transfer from " << accountFrom << " to " << accountTo);
+		return false;
+	}
 	return true;
 }
 
@@ -328,17 +349,22 @@ const vector<string> cUseOT::AssetGetAllNames() {
 	return assets;
 }
 
+const string cUseOT::AssetGetName(const string & accountID) {
+	if(!Init())
+		return "";
+	return OTAPI_Wrap::GetAccountWallet_Name(accountID);
+}
+
 bool cUseOT::AssetDisplayAllNames(bool dryrun) {
 	_fact("asset ls");
 	if(dryrun) return false;
 	if(!Init()) return false;
 
 	_dbg3("Retrieving all asset names");
-	vector<string> assets;
 	for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetAssetTypeCount();i++) {
-		assets.push_back(OTAPI_Wrap::GetAssetType_Name( OTAPI_Wrap::GetAssetType_ID(i)) );
+		ID assetID = OTAPI_Wrap::GetAssetType_ID(i);
+		nUtils::DisplayStringEndl(cout, AssetGetName( assetID ) + " - " + assetID );
 	}
-	nUtils::DisplayVector(cout, assets);
 	return true;
 }
 
@@ -652,7 +678,7 @@ bool cUseOT::NymDisplayAllNames(bool dryrun) {
 	if(!Init()) return false;
 
 	NymGetAll();
-	nUtils::DisplayMap(cout, mNyms);
+	nUtils::DisplayMap(cout, mNyms);// display Nyms cache
 
 	return true;
 }
@@ -704,7 +730,6 @@ bool cUseOT::NymRefresh(const string & nymName, bool all, bool dryrun) { //TODO 
 	if (all) {
 		int32_t nymsRetrieved = 0;
 		int32_t nymCount = OTAPI_Wrap::GetNymCount();
-
 		if (nymCount == 0){
 			_warn("No Nyms to retrieve");
 			return true;
@@ -928,11 +953,11 @@ bool cUseOT::ServerDisplayAllNames(bool dryrun) {
 	if(dryrun) return false;
 	if(!Init()) return false;
 
-	vector<string> servers;
-	for(int i = 0 ; i < OTAPI_Wrap::GetServerCount ();i++) {
-		servers.push_back( OTAPI_Wrap::GetServer_Name( OTAPI_Wrap::GetServer_ID(i) ) );
+
+	for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetServerCount();i++) {
+		ID serverID = OTAPI_Wrap::GetServer_ID(i);
+		nUtils::DisplayStringEndl(cout, ServerGetName( serverID ) + " - " + serverID );
 	}
-	nUtils::DisplayVectorEndl(cout, servers);
 	return true;
 }
 

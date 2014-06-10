@@ -118,6 +118,19 @@ void cCmdParser::Init() {
 		}
 	);
 
+	cParamInfo pAccountMy( "account", "on of my accounts",
+		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
+			_dbg3("Account validation");
+				return use.AccountCheckIfExists(data.Var(curr_word_ix + 1));
+		} ,
+		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
+			_dbg3("Account hinting");
+			return use.AccountGetAllNames();
+		}
+	);
+	cParamInfo pAccountTo = pAccount << cParamInfo("account-to", "account that exists on a server"); // TODO suggest not the same account as was used already before
+	cParamInfo pAccountFrom = pAccountMy << cParamInfo("account-from", "one of your accounts, as the outgoing account");
+
 	cParamInfo pAccountNewName( "account-new", "a new account to be created",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Account name validation");
@@ -160,6 +173,17 @@ void cCmdParser::Init() {
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			return vector<string> { "-1", "0", "1", "2", "100" };
+		}
+	);
+
+	cParamInfo pAmount( "int64_t", "Amount of asset",
+		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
+			// TODO check if is any integer
+			// TODO check if can send that amount
+			return true;
+		} ,
+		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
+			return vector<string> {"1", "10", "100" };
 		}
 	);
 
@@ -305,6 +329,12 @@ void cCmdParser::Init() {
 
 	AddFormat("account mv", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
+
+	AddFormat("account transferfrom", {pAccountFrom, pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountTransfer(D.V(1), D.V(2), stoi( D.V(3) ), D.v(4), D.has("--dryrun") ); } );
+
+	AddFormat("account transferto", {pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountTransfer(U.AccountGetName(U.AccountGetDefault()), D.V(1), stoi( D.V(2) ), D.v(3), D.has("--dryrun") ); } );
 
 	//======== ot asset ========
 
@@ -525,7 +555,7 @@ void cCmdProcessing::_Parse() {
 						word += " " + mCommandLine.at(pos);
 						++pos;
 					}
-					word.erase(word.end(), word.end()-1); // ease the closing " of last mCommandLine[..] that is not at end of word
+					word.erase(word.end()-1, word.end()); // ease the closing " of last mCommandLine[..] that is not at end of word
 					_dbg1("Quoted word is:"<<word);
 				}
 				if (nUtils::CheckIfBegins("--", word)) { // --bcc foo
@@ -556,7 +586,7 @@ void cCmdProcessing::_Parse() {
 						word += " " + mCommandLine.at(pos);
 						++pos;
 					}
-					word.erase(word.end(), word.end()-1); // ease the closing " of last mCommandLine[..] that is not at end of word
+					word.erase(word.end()-1, word.end()); // ease the closing " of last mCommandLine[..] that is not at end of word
 					_dbg1("Quoted word is:"<<word);
 				}
 				if (nUtils::CheckIfBegins("--", word)) { // --bcc foo

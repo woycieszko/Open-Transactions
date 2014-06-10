@@ -63,11 +63,12 @@ namespace nUse {
 		EXEC bool AccountSetDefault(const string & accountName, bool dryrun);
 		bool AccountSetName(const string & accountID, const string & NewAccountName);
 		EXEC bool AccountCreate(const string & assetName, const string & newAccountName, bool dryrun);
-
+		EXEC bool AccountTransfer(const string & accountFrom, const string & accountTo, const int64_t & amount, const string & note, bool dryrun);
 
 		VALID bool AssetCheckIfExists(const string & assetName);
 		const string AssetGetId(const string & assetName);
 		const vector<string> AssetGetAllNames();
+		const string AssetGetName(const string & accountID);
 		EXEC bool AssetDisplayAllNames(bool dryrun);
 		EXEC bool AssetIssue(const string & serverID, const string & nymID, bool dryrun) ;
 		EXEC bool AssetNew(const std::string & nymID, bool dryrun);
