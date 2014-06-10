@@ -413,6 +413,12 @@ cCmdProcessing::cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> com
 }
 
 void cCmdProcessing::Parse() {
+	try {
+		_Parse();
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+}
+
+void cCmdProcessing::_Parse() {
 	int _dbg_ignore=50;
 
 	// mCommandLine = ot, msg, sendfrom, alice, bob, hello
@@ -754,8 +760,7 @@ void cCmdData::AddOpt(const string &name, const string &value) throw(cErrArgIlle
 
 // ========================================================================================================================
 
-
-void cmd_test( shared_ptr<cUseOT> use ) {
+void _cmd_test( shared_ptr<cUseOT> use ) {
 	_mark("TEST TREE");
 
 	shared_ptr<cCmdParser> parser(new cCmdParser);
@@ -851,13 +856,21 @@ void cmd_test( shared_ptr<cUseOT> use ) {
 */
 	};
 	for (auto cmd : alltest) {
-		if (!cmd.length()) continue;
-		_mark("====== Testing command: " << cmd );
-		auto processing = parser->StartProcessing(cmd, use);
-		processing.Parse();
-		processing.UseExecute();
+		try {
+			if (!cmd.length()) continue;
+			_mark("====== Testing command: " << cmd );
+			auto processing = parser->StartProcessing(cmd, use);
+			processing.Parse();
+			processing.UseExecute();
+		} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 	}
 
+}
+
+void cmd_test( shared_ptr<cUseOT> use ) {
+	try {
+		_cmd_test(use);
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 }
 
 }; // namespace nNewcli

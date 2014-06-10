@@ -23,6 +23,14 @@ namespace nOT {
 
 namespace nUtils {
 
+class myexception : public std::runtime_error {
+	public:
+		myexception(const char * what);
+		myexception(const std::string &what);
+		virtual ~myexception();
+		virtual void Report() const;
+};
+
 INJECT_OT_COMMON_USING_NAMESPACE_COMMON_1; // <=== namespaces
 
 // ======================================================================================

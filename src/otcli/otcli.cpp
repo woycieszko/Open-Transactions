@@ -14,6 +14,12 @@ namespace nNewcli {
 INJECT_OT_COMMON_USING_NAMESPACE_COMMON_1; // <=== namespaces
 
 int cOTCli::Run(const vector<string> args_without_programname) { 
+	try {
+		return _Run(args_without_programname);
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+}
+
+int cOTCli::_Run(const vector<string> args_without_programname) { 
 	LoadScript("autostart-dev.local", "autostart script"); // todo depending on execution mode? +devel ?
 
 	if (nOT::gRunOptions.getDoRunDebugshow()) {

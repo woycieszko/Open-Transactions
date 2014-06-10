@@ -19,6 +19,22 @@ namespace nUtils {
 
 INJECT_OT_COMMON_USING_NAMESPACE_COMMON_1; // <=== namespaces
 
+myexception::myexception(const char * what) 
+	: std::runtime_error(what)
+{ }
+
+myexception::myexception(const std::string &what) 
+	: std::runtime_error(what)
+{ }
+
+void myexception::Report() const {
+	_erro("Error: " << what());
+}
+
+myexception::~myexception() { }
+
+// ====================================================================
+
 // text trimming
 // http://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
 std::string & ltrim(std::string &s) {
