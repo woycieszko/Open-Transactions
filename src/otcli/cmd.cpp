@@ -15,6 +15,15 @@ using namespace nUse;
 
 // ========================================================================================================================
 
+class cCmdParser_pimpl {
+	friend class cCmdParser;
+
+	typedef map< cCmdName , shared_ptr<cCmdFormat> >::value_type tTreePair; // type of element (pair) in tree-map. TODO: will be not needed in C+11 map emplace
+
+	private:
+		map< cCmdName , shared_ptr<cCmdFormat> > mTree;
+};
+
 cCmdParser::cCmdParser() 
 : mI( new cCmdParser_pimpl )
 { }
@@ -269,7 +278,7 @@ void cCmdParser::Init() {
 	AddFormat("nym set-default", {pNym}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.NymSetDefault( D.V(1), D.has("--dryrun") ); } );
 
-	AddFormat("nym refresh", {}, {pNym}, { {"--dryrun", pBool}, {"--all", pBool}}, // FIXME proper handle option without parameter!
+	AddFormat("nym refresh", {}, {pNym}, { {"--dryrun", pBool}, {"--all", pBool}},
 		LAMBDA { auto &D=*d; return U.NymRefresh( D.v(1, U.NymGetName( U.NymGetDefault() ) ), D.has("--all"), D.has("--dryrun") ); } );
 
 	AddFormat("nym ls", {}, {}, { {"--dryrun", pBool} },
@@ -280,8 +289,8 @@ void cCmdParser::Init() {
 	AddFormat("account new", {pAsset, pAccountNewName}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountCreate( D.V(1), D.V(2), D.has("--dryrun") ); } );
 
-	AddFormat("account refresh", {}, {pAccount}, { {"--dryrun", pBool}, /*{"--all", pBool}*/},
-		LAMBDA { auto &D=*d; return U.AccountRefresh( D.v(1, U.AccountGetName(U.AccountGetDefault())), D.has("--dryrun") ); } );
+	AddFormat("account refresh", {}, {pAccount}, { {"--dryrun", pBool}, {"--all", pBool}},
+		LAMBDA { auto &D=*d; return U.AccountRefresh( D.v(1, U.AccountGetName(U.AccountGetDefault())), D.has("--all"), D.has("--dryrun") ); } );
 
 	AddFormat("account set-default", {pAccount}, {}, { {"--dryrun", pBool}},
 		LAMBDA { auto &D=*d; return U.AccountSetDefault( D.V(1), D.has("--dryrun") ); } );
@@ -316,8 +325,8 @@ void cCmdParser::Init() {
 	AddFormat("server add", {}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.ServerAdd(D.has("--dryrun") ); } );
 
-//	AddFormat("server new", {}, {}, { {"--dryrun", pBool} }, //TODO implement functionality
-//		LAMBDA { auto &D=*d; return U.ServerAdd(D.has("--dryrun") ); } );
+	AddFormat("server new", {}, {pNymMy}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.ServerCreate(D.v(1, U.NymGetName( U.NymGetDefault())), D.has("--dryrun") ); } );
 
 	AddFormat("server rm", {pServer}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.ServerRemove(D.V(1), D.has("--dryrun") ); } );

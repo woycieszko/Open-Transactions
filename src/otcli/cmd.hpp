@@ -26,15 +26,7 @@ class cParamString;
 
 class cCmdExecutable;
 
-//TODO check why cCmdParser_pimpl definition is needed in header (incomplete type when creating new cCmdParser object in othint.cpp)
-class cCmdParser_pimpl {
-	friend class cCmdParser;
-
-	typedef map< cCmdName , shared_ptr<cCmdFormat> >::value_type tTreePair; // type of element (pair) in tree-map. TODO: will be not needed in C+11 map emplace
-
-	private:
-		map< cCmdName , shared_ptr<cCmdFormat> > mTree;
-};
+class cCmdParser_pimpl;
 
 // ============================================================================
 

@@ -163,51 +163,51 @@ bool cUseOT::AccountRemove(const string & accountName, bool dryrun) { ///<
 	return true;
 }
 
-bool cUseOT::AccountRefresh(const string & accountName, bool dryrun) {
+bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
 	_fact("account refresh " << accountName);
 	if(dryrun) return false;
 	if(!Init()) return false;
 
 	OT_ME madeEasy;
 
-	ID accountID = AccountGetId(accountName);
-
-	ID acctSvrID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
-	ID acctNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
-
-	if ( madeEasy.retrieve_account(acctSvrID, acctNymID, accountID, true) ){ // forcing download
-		_info("Account " + accountName + "(" + accountID +  ")" + " retrieval success");
-		return true;
-	}
-	_warn("Account " + accountName + "(" + accountID +  ")" + " retrieval failure");
-	return false;
-}
-
-void cUseOT::AccountRefreshAll() {
-	if(!Init())
-		return;
-
-	OT_ME madeEasy;
-
-	int32_t nymCount = OTAPI_Wrap::GetAccountCount();
 	int32_t serverCount = OTAPI_Wrap::GetServerCount();
-
-	for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){
-		ID serverId = OTAPI_Wrap::GetServer_ID(serverIndex);
-
-		for (int32_t accountIndex = 0; accountIndex < nymCount; ++accountIndex){
+	if (all) {
+		int32_t accountsChecked = 0;
+		int32_t accountCount = OTAPI_Wrap::GetAccountCount();
+		for (int32_t accountIndex = 0; accountIndex < accountCount; ++accountIndex) {
 			ID accountID = OTAPI_Wrap::GetAccountWallet_ID(accountIndex);
-
-			ID acctNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
-			ID acctSvrID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
-
-			if ( madeEasy.retrieve_account(acctSvrID, acctNymID, accountID, true) ){ // forcing download
-				_info("Account " + AccountGetName(accountID) + "(" + accountID +  ")" + " retrieval success");
-				return;
+			ID accountServerID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
+			ID accountNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
+			if ( madeEasy.retrieve_account(accountServerID, accountNymID, accountID, true) ) { // forcing download
+				_info("Account " + accountName + "(" + accountID +  ")" + " retrieval success from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
+				++accountsChecked;
+			}else {
+				_erro("Account " + accountName + "(" + accountID +  ")" + " retrieval failure from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
 			}
-			_warn("Account " + AccountGetName(accountID) + "(" + accountID +  ")" + " retrieval failure");
+		}
+		if (accountsChecked == accountCount) {
+			_info("All accounts were successfully retrieved");
+			return true;
+		} else if (accountsChecked == 0) {
+			_erro("Accounts retrieval failure");
+			return false;
+		} else {
+			_erro("Some accounts cannot be retrieved");
+			return true;
 		}
 	}
+	else {
+		ID accountID = AccountGetId(accountName);
+		ID accountServerID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
+		ID accountNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
+		if ( madeEasy.retrieve_account(accountServerID, accountNymID, accountID, true) ) { // forcing download
+			_info("Account " + accountName + "(" + accountID +  ")" + " retrieval success from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
+			return true;
+		}
+		_warn("Account " + accountName + "(" + accountID +  ")" + " retrieval failure from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
+		return false;
+	}
+	return true; //TODO
 }
 
 bool cUseOT::AccountRename(const string & oldAccountName, const string & newAccountName, bool dryrun) {
@@ -692,13 +692,15 @@ bool cUseOT::NymRefresh(const string & nymName, bool all, bool dryrun) { //TODO 
 	if(dryrun) return false;
 	if(!Init()) return false;
 
+//	TODO make like account refresh
+
 	OT_ME madeEasy;
 	int32_t serverCount = OTAPI_Wrap::GetServerCount();
 	if (all) {
 		int32_t nymCount = OTAPI_Wrap::GetNymCount();
 		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){ // Working for all available servers!
-			for (int32_t accountIndex = 0; accountIndex < nymCount; ++accountIndex){
-				ID nymID = OTAPI_Wrap::GetNym_ID(accountIndex);
+			for (int32_t nymIndex = 0; nymIndex < nymCount; ++nymIndex){
+				ID nymID = OTAPI_Wrap::GetNym_ID(nymIndex);
 				ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
 				if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)){
 					if ( madeEasy.retrieve_nym(nymID, serverID, true) ){ // forcing download
@@ -710,7 +712,7 @@ bool cUseOT::NymRefresh(const string & nymName, bool all, bool dryrun) { //TODO 
 		}
 	}
 	else {
-		ID nymID = AccountGetId(nymName);
+		ID nymID = NymGetId(nymName);
 		for (int32_t serverIndex = 0; serverIndex < serverCount; ++serverIndex){ // Working for all available servers!
 			ID serverID = OTAPI_Wrap::GetServer_ID(serverIndex);
 			if (OTAPI_Wrap::IsNym_RegisteredAtServer(nymID, serverID)){
@@ -786,7 +788,28 @@ bool cUseOT::ServerAdd(bool dryrun) {
 	return false;
 }
 
-void cUseOT::ServerCheck() { ///< Use it to ping server
+bool cUseOT::ServerCreate(const string & nymName, bool dryrun) {
+	_fact("server ls");
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string xmlContents;
+	nUtils::cEnvUtils envUtils;
+	xmlContents = envUtils.Compose();
+
+	ID nymID = NymGetId(nymName);
+	string contract = OTAPI_Wrap::CreateServerContract(nymID, xmlContents);
+
+	if( !contract.empty() ) {
+		_info( "Contract created for Nym: " << nymName << "(" << nymID << ")" );
+		nUtils::DisplayStringEndl(cout, contract);
+		return true;
+	}
+	_erro( "Failure to create contract for nym: " << nymName << "(" << nymID << ")" );
+	return false;
+}
+
+void cUseOT::ServerCheck() {
 	if(!Init())
 			return ;
 
