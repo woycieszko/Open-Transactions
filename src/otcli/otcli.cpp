@@ -53,7 +53,7 @@ int cOTCli::Run(const vector<string> args_without_programname) {
 					break;
 				case gRunOptions.eRunModeCurrent :
 					using namespace nOT::nNewcli;
-					shell.runEditline(useOT);
+					nNewcli::cmd_test(useOT);
 					break;
 			}
 		}

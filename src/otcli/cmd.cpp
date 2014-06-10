@@ -15,15 +15,6 @@ using namespace nUse;
 
 // ========================================================================================================================
 
-class cCmdParser_pimpl {
-	friend class cCmdParser;
-
-	typedef map< cCmdName , shared_ptr<cCmdFormat> >::value_type tTreePair; // type of element (pair) in tree-map. TODO: will be not needed in C+11 map emplace
-
-	private:
-		map< cCmdName , shared_ptr<cCmdFormat> > mTree;
-};
-
 cCmdParser::cCmdParser() 
 : mI( new cCmdParser_pimpl )
 { }
@@ -252,10 +243,10 @@ void cCmdParser::Init() {
 	AddFormat("msg sendto", {pTo}, {pMsg, pSubj}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
 		LAMBDA { auto &D=*d; return U.MsgSend(U.NymGetName(U.NymGetDefault()), D.V(1) + D.o("--cc"), D.v(2), D.v(3,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
 
-	AddFormat("msg rm", {pNym, pOnceInt}, {}, { {"--dryrun", pBool} /*{"--all", ""}*/ }, // FIXME proper handle option without parameter!
+	AddFormat("msg rm", {pNym, pOnceInt}, {}, { {"--dryrun", pBool} /*{"--all", pBool}*/ }, // FIXME proper handle option without parameter!
 		LAMBDA { auto &D=*d; return U.MsgInRemoveByIndex(D.V(1), stoi(D.V(2)), D.has("--dryrun"));} );
 
-	AddFormat("msg rm-out", {pNym, pOnceInt}, {}, { {"--dryrun", pBool} /*{"--all", ""}*/ }, // FIXME proper handle option without parameter!
+	AddFormat("msg rm-out", {pNym, pOnceInt}, {}, { {"--dryrun", pBool} /*{"--all", , pBool}*/ }, // FIXME proper handle option without parameter!
 		LAMBDA { auto &D=*d; return U.MsgOutRemoveByIndex(D.V(1), stoi(D.V(2)), D.has("--dryrun")); } );
 
 	//======== ot nym ========

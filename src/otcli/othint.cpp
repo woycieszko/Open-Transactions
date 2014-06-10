@@ -953,8 +953,10 @@ static char* completionReadlineWrapper(const char *sofar , int number) {
 char ** completion(const char* text, int start, int end __attribute__((__unused__))) {
 	char **matches;
 	matches = (char **)NULL;
-	matches = rl_completion_matches (text, completionReadlineWrapper);
+//	matches = rl_completion_matches (text, completionReadlineWrapper);
+	_erro("Autocompletion refactoring - not working");
 	return (matches);
+
 }
 
 void cInteractiveShell::runEditline(shared_ptr<nUse::cUseOT> use) {
@@ -965,9 +967,8 @@ void cInteractiveShell::runEditline(shared_ptr<nUse::cUseOT> use) {
 	rl_attempted_completion_function = completion;
 	rl_bind_key('\t',rl_complete);
 
-//	shared_ptr<nNewcli::cCmdParser> parser(new nNewcli::cCmdParser);
 	auto parser = make_shared<nNewcli::cCmdParser>();
-//	parser->Init();
+	parser->Init();
 
 	while((buf = readline("> "))!=NULL) { // <--- readline()
 		std::string word;
@@ -989,13 +990,13 @@ void cInteractiveShell::runEditline(shared_ptr<nUse::cUseOT> use) {
 		if (cmd.length()) {
 		add_history(cmd.c_str()); // TODO (leaks memory...) but why
 
-//		auto processing = parser->StartProcessing(cmd, use);
-//		processing.Parse();
-//		processing.UseExecute();
+		auto processing = parser->StartProcessing(cmd, use);
+		processing.Parse();
+		processing.UseExecute();
 
 		//Execute in BuildTreeOfCommandlines:
-		nOT::nOTHint::cHintManager hint;
-		hint.AutoCompleteEntire(cmd);
+//		nOT::nOTHint::cHintManager hint;
+//		hint.AutoCompleteEntire(cmd);
 		}
 	}
 	if (buf) { free(buf); buf=NULL; }
