@@ -239,6 +239,45 @@ class cCmdName {  MAKE_CLASS_NAME("cCmdName");
 };
 
 
+// ot msg sendfrom alice bob --cc mark --cc dave --cc mark
+//                           ^^^^^^^^^           ^^^^^^^^^  warning duplicated recipient
+//
+// ot msg sendfrom alice bob --intaractive --prio 4 --verbose
+//                           ^^^^^^^^^^^^^         ^^^^^^^^^^  warning excluding options
+//
+// ot msg sendfrom alice bob --prio 4 --cc dave --prio 8
+//                           ^^^^^^^^           ^^^^^^^^ warning: there can be just one --prio 
+
+class cValidateError {
+	public:
+		enum class tKind { 
+			w_syntax, // problem detectable just by seeing the strings of arguments (warning)
+			e_syntax, // same - but error
+			w_data, // problem when working on the data, e.g. after checking the address-book we know this operation seems strange
+			e_data, // after checking the data we are sure this operation is wrong
+		};
+
+		enum class tGuess {
+			none, // this problem exists alwas, no guessing, e.g. "10AAA1" is never a valid amount of currency (float)
+			cached, // this problem exists (with data) as we checked the cached data (cache, local address book etc) perhaps it would work 
+			now  // we checked with authoritative source now (e.g. the server) and still there is a problem (user dosn't exist on server)
+		};
+
+		tKind mKind;
+		tGuess mGuess;
+
+		string mMessage;
+
+		vector<int> argpos; // TODO:nrix at which position of argument did the error occured
+		
+	public:
+		cValidateError(const string &message, tKind exit, tGuess guess) : mMessage(message), mKind(exit), mGuess(guess) { }  // inline
+
+		void Print() const;
+};
+
+//		vector< cValidateError > mError;
+
 /**
 Info about Parameter: How to validate and how to complete this argument
 */

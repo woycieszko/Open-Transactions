@@ -693,6 +693,13 @@ void cCmdProcessing::_UseExecute() {
 
 // ========================================================================================================================
 
+void cValidateError::Print() const {
+	//cout << 
+	
+}
+
+// ========================================================================================================================
+
 cParamInfo::cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint) 
 	: mName(name), mDescr(descr), funcValid(valid), funcHint(hint)
 { }
