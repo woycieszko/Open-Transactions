@@ -71,11 +71,10 @@ void cCmdParser::Init() {
 	_mark("Init tree");
 
 // TODO hinting for ID?
-
 	cParamInfo pNym( "nym", "nym existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym validation");
-				return use.CheckIfExists(use.subjectType::Nym, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::subjectType::Nym, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Nym hinting");
@@ -86,7 +85,7 @@ void cCmdParser::Init() {
 	cParamInfo pNymMy( "nym-my", "one of my own nyms",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym validation");
-				return use.CheckIfExists(use.subjectType::Nym, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::subjectType::Nym, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Nym hinting");
@@ -112,7 +111,7 @@ void cCmdParser::Init() {
 	cParamInfo pAccount( "account", "account existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Account validation");
-				return use.CheckIfExists(use.subjectType::Account, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::subjectType::Account, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Account hinting");
@@ -123,7 +122,7 @@ void cCmdParser::Init() {
 	cParamInfo pAccountMy( "account", "on of my accounts",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Account validation");
-				return use.CheckIfExists(use.subjectType::Account, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::subjectType::Account, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Account hinting");
@@ -148,7 +147,7 @@ void cCmdParser::Init() {
 	cParamInfo pAsset( "asset", "asset that exists on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Asset validation");
-				return use.CheckIfExists(use.subjectType::Asset, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::subjectType::Asset, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Asset hinting");
@@ -159,7 +158,7 @@ void cCmdParser::Init() {
 	cParamInfo pServer( "server", "identifier of existing server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Server validation");
-				return use.CheckIfExists(use.subjectType::Server, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::subjectType::Server, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Server hinting");

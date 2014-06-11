@@ -22,11 +22,11 @@ cUseOT::cUseOT(const string &mDbgName)
 , mDefaultIDsFile( mDataFolder + "defaults.opt" )
 {
 	_dbg1("Creating cUseOT "<<DbgName());
-
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Account, AccountGetId);
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Asset, AssetGetId);
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Nym, NymGetId);
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Server, ServerGetId);
+	FPTR fptr;
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Account, fptr = &cUseOT::AccountGetId) );
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Asset, fptr = &cUseOT::AssetGetId) );
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Nym, fptr = &cUseOT::NymGetId) );
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Server, fptr = &cUseOT::ServerGetId) );
 }
 
 
@@ -97,7 +97,7 @@ bool cUseOT::Init() {
 bool cUseOT::CheckIfExists(subjectType type, const string & subject) {
 	if(!Init()) return false;
 
-	ID subjectID = subjectGetIDFunc.at(type)(subject);
+	ID subjectID = (this->*cUseOT::subjectGetIDFunc.at(type))(subject);
 
 	if (!subjectID.empty()) {
 		_dbg3("Account " + subject + " exists");

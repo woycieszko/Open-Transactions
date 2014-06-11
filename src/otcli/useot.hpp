@@ -38,9 +38,11 @@ namespace nUse {
 		map<string, ID> mDefaultIDs;
 		const string mDataFolder;
 		const string mDefaultIDsFile;
-		typedef std::function< const ID ( const string & NameOrID ) > tGetID;
+//		typedef std::function< const ID ( const string & NameOrID ) > tGetID;
+		typedef const ID ( cUseOT::*FPTR ) (const string &);
 
-		map<subjectType, tGetID> subjectGetIDFunc;
+//		map<subjectType, tGetID> subjectGetIDFunc;
+		map<subjectType, FPTR> subjectGetIDFunc;
 
 	private:
 
