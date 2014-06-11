@@ -22,24 +22,31 @@ namespace nUse {
 	using name = string;
 
 	class cUseOT {
-
-		string mDbgName;
-
-		map<string, ID> mDefaultIDs;
-		const string mDataFolder;
-		const string mDefaultIDsFile;
-
-		void LoadDefaults();
-
-		public:
+	public:
 
 		map<ID, name> mNyms; // TODO optimize/share memory? or convert on usage
 //		TODO make cache for accounts, assets etc
 		bool mNymsMy_loaded;
 		bool OTAPI_loaded;
 		bool OTAPI_error;
+		enum class subjectType {Account, Asset, Nym, Server};
 
-		public:
+	private:
+
+		string mDbgName;
+
+		map<string, ID> mDefaultIDs;
+		const string mDataFolder;
+		const string mDefaultIDsFile;
+		typedef std::function< const ID ( const string & NameOrID ) > tGetID;
+
+		map<subjectType, tGetID> subjectGetIDFunc;
+
+	private:
+
+		void LoadDefaults();
+
+	public:
 
 		cUseOT(const string &mDbgName);
 		~cUseOT();
@@ -48,6 +55,8 @@ namespace nUse {
 
 		bool Init();
 		void CloseApi();
+
+		VALID bool CheckIfExists(subjectType type, const string & subject);
 
 		//================= account =================
 

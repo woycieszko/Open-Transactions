@@ -22,6 +22,11 @@ cUseOT::cUseOT(const string &mDbgName)
 , mDefaultIDsFile( mDataFolder + "defaults.opt" )
 {
 	_dbg1("Creating cUseOT "<<DbgName());
+
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Account, AccountGetId);
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Asset, AssetGetId);
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Nym, NymGetId);
+	subjectGetIDFunc.insert(std::make_pair(subjectType::Server, ServerGetId);
 }
 
 
@@ -87,6 +92,19 @@ bool cUseOT::Init() {
 		return false;
 	}
 	return OTAPI_loaded;
+}
+
+bool cUseOT::CheckIfExists(subjectType type, const string & subject) {
+	if(!Init()) return false;
+
+	ID subjectID = subjectGetIDFunc.at(type)(subject);
+
+	if (!subjectID.empty()) {
+		_dbg3("Account " + subject + " exists");
+		return true;
+	}
+	_warn("Can't find this Account: " + subject);
+	return false;
 }
 
 bool cUseOT::AccountCheckIfExists(const string & account) {
