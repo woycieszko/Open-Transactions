@@ -2,10 +2,8 @@
 
 #include "lib_common2.hpp"
 
-#include "otcli.hpp"
 #include "othint.hpp"
-#include "useot.hpp"
-#include "cmd.hpp"
+#include "otcli.hpp"
 
 #include "tests.hpp" // TODO Not needed
 
@@ -925,19 +923,20 @@ bool my_rl_wrapper_debug; // external
 // (done with number=0) is an error (at least currently, in future we might cache various completion
 // arrays, or recalculate on change)
 
+shared_ptr<nNewcli::cCmdParser> gHandleParser;
 
-static char* completionReadlineWrapper(const char *sofar , int number) {
+static char* completionReadlineWrapper(const char *sofar , int number) { // Before calling this function gHandleParser must be set
 	bool dbg = my_rl_wrapper_debug;
+	Assert( !(gHandleParser == nullptr), "gHandleParser must be set before calling this function");
 	if (dbg) _dbg3("sofar="<<sofar<<" number="<<number<<" rl_line_buffer="<<rl_line_buffer<<endl);
 	string line;
 	if (rl_line_buffer) line = rl_line_buffer;
 	line = line.substr(0, rl_point); // Complete from cursor position
-	nOT::nOTHint::cHintManager hint;
 
 	static vector <string> completions;
 	if (number == 0) {
 		if (dbg) _dbg3("Start autocomplete (during first callback, number="<<number<<")");
-		completions = hint.AutoCompleteEntire(line); // <--
+//		completions = gHandleParser->Complete(line);
 		if (dbg)nOT::nUtils::DbgDisplayVectorEndl(completions); //TODO: display in debug
 		if (dbg) _dbg3("Done autocomplete (during first callback, number="<<number<<")");
 	}
@@ -980,6 +979,7 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 	rl_bind_key('\t',rl_complete);
 
 	auto parser = make_shared<nNewcli::cCmdParser>();
+	gHandleParser = parser;
 	parser->Init();
 	
 	int said_help=0, help_needed=0;

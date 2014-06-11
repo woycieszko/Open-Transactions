@@ -7,6 +7,7 @@ cmake_install.cmake
 autostart*.local
 debuglog.txt
 log.txt
+otcli-history.txt
 
 # Eclipse files
 .cproject

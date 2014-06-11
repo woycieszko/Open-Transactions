@@ -6,8 +6,7 @@ All for ot hint functionality goes here
 #ifndef INCLUDE_OT_NEWCLI_othint
 #define INCLUDE_OT_NEWCLI_othint
 
-#include "useot.hpp"
-
+#include "cmd.hpp"
 #include "lib_common2.hpp"
 
 namespace nOT {
@@ -15,6 +14,8 @@ namespace nOTHint{
 
 INJECT_OT_COMMON_USING_NAMESPACE_COMMON_2; // <=== namespaces
 // Data for hinting, e.g. cached or local information.
+
+extern shared_ptr<nNewcli::cCmdParser> gHandleParser;
 
 class cHintData {
 	public:
