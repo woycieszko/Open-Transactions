@@ -1014,7 +1014,7 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 				all_ok=true;
 			} 
 			catch (const myexception &e) { 
-				cerr<<"ERROR: Could not execute your command ("<<cmd<<")"<<endl/;
+				cerr<<"ERROR: Could not execute your command ("<<cmd<<")"<<endl;
 				cerr << e.what() << endl;
 				//e.Report();  
 				cerr<<endl;

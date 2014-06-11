@@ -89,17 +89,20 @@ bool cUseOT::Init() {
 	return OTAPI_loaded;
 }
 
-bool cUseOT::AccountCheckIfExists(const string & accountName) {
-	vector<string> v = AccountGetAllNames();
-	if (std::find(v.begin(), v.end(), accountName) != v.end()){
-		_dbg3("Account " + accountName + " exists");
+bool cUseOT::AccountCheckIfExists(const string & account) {
+	if(!Init()) return false;
+
+	ID accountID = AccountGetId(account);
+
+	if (!accountID.empty()) {
+		_dbg3("Account " + account + " exists");
 		return true;
 	}
-	_warn("Can't find account: " + accountName);
+	_warn("Can't find this Account: " + account);
 	return false;
 }
 
-const vector<string> cUseOT::AccountGetAllIds() {
+const vector<ID> cUseOT::AccountGetAllIds() {
 	if(!Init())
 	return vector<string> {};
 
@@ -125,7 +128,7 @@ const string cUseOT::AccountGetDefault() {
 	return mDefaultIDs.at("AccountID");
 }
 
-const string cUseOT::AccountGetId(const string & accountName) {
+const ID cUseOT::AccountGetId(const string & accountName) {
 	if(!Init())
 		return "";
 	if ( nUtils::checkPrefix(accountName) )
@@ -139,27 +142,27 @@ const string cUseOT::AccountGetId(const string & accountName) {
 	return "";
 }
 
-const string cUseOT::AccountGetName(const string & accountID) {
+const string cUseOT::AccountGetName(const ID & accountID) {
 	if(!Init())
 		return "";
 	return OTAPI_Wrap::GetAccountWallet_Name(accountID);
 }
 
-bool cUseOT::AccountRemove(const string & accountName, bool dryrun) { ///<
-	_fact("account rm " << accountName);
+bool cUseOT::AccountRemove(const string & account, bool dryrun) { ///<
+	_fact("account rm " << account);
 	if(dryrun) return false;
 	if(!Init()) return false;
 
-	if(OTAPI_Wrap::Wallet_CanRemoveAccount (AccountGetId(accountName))) {
+	if(OTAPI_Wrap::Wallet_CanRemoveAccount (AccountGetId(account))) {
 		_erro("Account cannot be deleted: doesn't have a zero balance?/outstanding receipts?");
 		return false;
 	}
 
-	if( OTAPI_Wrap::deleteAssetAccount( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), AccountGetId(accountName) ) ) { //FIXME should be
-		_erro("Failure deleting account: " + accountName);
+	if( OTAPI_Wrap::deleteAssetAccount( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), AccountGetId(account) ) ) { //FIXME should be
+		_erro("Failure deleting account: " + account);
 		return false;
 	}
-	_info("Account: " + accountName + " was successfully removed");
+	_info("Account: " + account + " was successfully removed");
 	return true;
 }
 
@@ -217,16 +220,16 @@ bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
 	return false;
 }
 
-bool cUseOT::AccountRename(const string & oldAccountName, const string & newAccountName, bool dryrun) {
-	_fact("account mv from " << oldAccountName << " to " << newAccountName);
+bool cUseOT::AccountRename(const string & account, const string & newAccountName, bool dryrun) {
+	_fact("account mv from " << account << " to " << newAccountName);
 	if(dryrun) return false;
 	if(!Init()) return false;
 
-	if( AccountSetName (AccountGetId(oldAccountName), newAccountName) ) {
-		_info("Account " << oldAccountName << " renamed to " << newAccountName);
+	if( AccountSetName (AccountGetId(account), newAccountName) ) {
+		_info("Account " << account << " renamed to " << newAccountName);
 		return true;
 	}
-	_erro("Failed to rename account " << oldAccountName << " to " << newAccountName);
+	_erro("Failed to rename account " << account << " to " << newAccountName);
 	return false;
 }
 
@@ -297,12 +300,12 @@ bool cUseOT::AccountDisplayAllNames(bool dryrun) {
 	return true;
 }
 
-bool cUseOT::AccountSetDefault(const string & accountName, bool dryrun) {
-	_fact("account set-default " << accountName);
+bool cUseOT::AccountSetDefault(const string & account, bool dryrun) {
+	_fact("account set-default " << account);
 	if(dryrun) return false;
 	if(!Init()) return false;
 
-	mDefaultIDs.at("AccountID") = AccountGetId(accountName);
+	mDefaultIDs.at("AccountID") = AccountGetId(account);
 	return true;
 }
 
@@ -328,13 +331,16 @@ bool cUseOT::AccountTransfer(const string & accountFrom, const string & accountT
 	return true;
 }
 
-bool cUseOT::AssetCheckIfExists(const string & assetName) {
-	vector<string> v = AssetGetAllNames();
-	if (std::find(v.begin(), v.end(), assetName) != v.end()) {
-		_dbg3("Asset " + assetName + " exists");
+bool cUseOT::AssetCheckIfExists(const string & asset) {
+	if(!Init()) return false;
+
+	ID assetID = AssetGetId(asset);
+
+	if (!assetID.empty()) {
+		_dbg3("Asset " + asset + " exists");
 		return true;
 	}
-	_warn("Can't find that asset: " + assetName);
+	_warn("Can't find this asset: " + asset);
 	return false;
 }
 
@@ -349,7 +355,7 @@ const vector<string> cUseOT::AssetGetAllNames() {
 	return assets;
 }
 
-const string cUseOT::AssetGetName(const string & accountID) {
+const string cUseOT::AssetGetName(const ID & accountID) {
 	if(!Init())
 		return "";
 	return OTAPI_Wrap::GetAccountWallet_Name(accountID);
@@ -382,10 +388,10 @@ const string cUseOT::AssetGetId(const string & assetName) {
 	return "";
 }
 
-const string cUseOT::AssetGetContract(const std::string & assetID){
+const string cUseOT::AssetGetContract(const string & asset){
 	if(!Init())
 		return "";
-	string strContract = OTAPI_Wrap::GetAssetType_Contract(assetID);
+	string strContract = OTAPI_Wrap::GetAssetType_Contract( AssetGetId(asset) );
 	return strContract;
 }
 
@@ -416,28 +422,32 @@ bool cUseOT::AssetIssue(const string & serverID, const string & nymID, bool dryr
 	return true;
 }
 
-bool cUseOT::AssetNew(const std::string & nymID, bool dryrun) {
-	_fact("asset new for nym=" << nymID);
+bool cUseOT::AssetNew(const string & nym, bool dryrun) {
+	_fact("asset new for nym=" << nym);
 	if(dryrun) return false;
 	if(!Init()) return false;
 	string xmlContents;
 	nUtils::cEnvUtils envUtils;
 	xmlContents = envUtils.Compose();
 
-	nUtils::DisplayStringEndl(cout, OTAPI_Wrap::CreateAssetContract(nymID, xmlContents) ); //TODO save contract to file
+	nUtils::DisplayStringEndl(cout, OTAPI_Wrap::CreateAssetContract(NymGetId(nym), xmlContents) ); //TODO save contract to file
 	return true;
 }
 
-void cUseOT::AssetRemove(const string & assetName) {
-	if(!Init())
-		return ;
-	string nymID = AssetGetId(assetName);
-	if ( OTAPI_Wrap::Wallet_CanRemoveAssetType(assetName) ) {
-		if ( OTAPI_Wrap::Wallet_RemoveAssetType(assetName) )
+bool cUseOT::AssetRemove(const string & asset, bool dryrun) {
+	_fact("asset rm " << asset);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	string assetID = AssetGetId(asset);
+	if ( OTAPI_Wrap::Wallet_CanRemoveAssetType(assetID) ) {
+		if ( OTAPI_Wrap::Wallet_RemoveAssetType(assetID) ) {
 			_info("Asset was deleted successfully");
-		else
-			_warn("Asset cannot be removed");
+			return true;
+		}
 	}
+	_warn("Asset cannot be removed");
+	return false;
 }
 
 void cUseOT::AssetSetDefault(const std::string & assetName){
@@ -623,15 +633,16 @@ bool cUseOT::NymCreate(const string & nymName, bool dryrun) {
 	return true;
 }
 
-bool cUseOT::NymCheckIfExists(const string & nymName) { ///< Check only name!
-	if(!Init())
-			return false;
-	vector<string> v = NymGetAllNames();
-	if (std::find(v.begin(), v.end(), nymName) != v.end()) {
-		_dbg3("Nym " + nymName + " exists");
+bool cUseOT::NymCheckIfExists(const string & nym) {
+	if(!Init()) return false;
+
+	ID nymID = NymGetId(nym);
+
+	if (!nymID.empty()) {
+		_dbg3("Nym " + nym + " exists");
 		return true;
 	}
-	_warn("Can't find this Nym: " + nymName);
+	_warn("Can't find this Nym: " + nym);
 	return false;
 }
 
@@ -693,7 +704,7 @@ const string cUseOT::NymGetDefault() {
 const string cUseOT::NymGetId(const string & nymName) { // Gets nym aliases and IDs begins with '^'
 	if(!Init())
 		return "";
-	if ( nUtils::checkPrefix(nymName) )
+	if ( nUtils::checkPrefix(nymName) ) // nym ID
 		return nymName.substr(1);
 	else { // nym Name
 		for(int i = 0 ; i < OTAPI_Wrap::GetNymCount ();i++) {
@@ -826,15 +837,15 @@ bool cUseOT::NymSetName(const string & nymID, const string & newNymName) { //TOD
 }
 
 bool cUseOT::NymRename(const string & oldNymName, const string & newNymName, bool dryrun) {
-	_fact("nym mv from " << oldNymName << " to " << newNymName);
+	_fact("nym rename from " << oldNymName << " to " << newNymName);
 	if(dryrun) return false;
 	if(!Init()) return false;
 
 	if( NymSetName(NymGetId(oldNymName), newNymName) ) {
-		_info("Account " << oldNymName << " renamed to " << newNymName);
+		_info("Nym " << oldNymName << " renamed to " << newNymName);
 		return true;
 	}
-	_erro("Failed to rename account " << oldNymName << " to " << newNymName);
+	_erro("Failed to rename Nym " << oldNymName << " to " << newNymName);
 	return false;
 }
 
@@ -889,19 +900,22 @@ void cUseOT::ServerCheck() {
 	if(!Init())
 			return ;
 
-	if( !OTAPI_Wrap::checkServerID( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID") ) ){
+	if( !OTAPI_Wrap::checkServerID( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID") ) ) {
 		_erro( "No response from server: " + mDefaultIDs.at("ServerID") );
 	}
 	_info("Server " + mDefaultIDs.at("ServerID") + " is OK");
 }
 
-bool cUseOT::ServerCheckIfExists(const string & serverName) {
-	vector<string> v = ServerGetAllNames();
-	if (std::find(v.begin(), v.end(), serverName) != v.end()) {
-		_dbg3("Server " + serverName + " exists");
+bool cUseOT::ServerCheckIfExists(const string & server) {
+	if(!Init()) return false;
+
+	ID serverID = ServerGetId(server);
+
+	if (!serverID.empty()) {
+		_dbg3("Server " + server + " exists");
 		return true;
 	}
-	_warn("Can't find this server: " + serverName);
+	_warn("Can't find this server: " + server);
 	return false;
 }
 

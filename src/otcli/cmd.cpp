@@ -70,6 +70,8 @@ void cCmdParser::AddFormat(
 void cCmdParser::Init() {
 	_mark("Init tree");
 
+// TODO hinting for ID?
+
 	cParamInfo pNym( "nym", "nym existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym validation");
@@ -176,7 +178,7 @@ void cCmdParser::Init() {
 		}
 	);
 
-	cParamInfo pAmount( "int64_t", "Amount of asset",
+	cParamInfo pAmount( "amount", "Amount of asset",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			// TODO check if is any integer
 			// TODO check if can send that amount
@@ -257,8 +259,6 @@ void cCmdParser::Init() {
 
 	#define LAMBDA [] (tData d, tUse U) -> tExit
 
-	//======== ot msg ========
-
 	auto this_shared_do_not_use = shared_from_this(); // make_shared<cCmdProcessing>(this);
 	weak_ptr<cCmdParser> this_weak( this_shared_do_not_use );
 
@@ -268,6 +268,51 @@ void cCmdParser::Init() {
 			this_lock->PrintUsage();
 			return true;
 		} );
+
+	//======== ot account ========
+
+	AddFormat("account new", {pAsset, pAccountNewName}, {}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountCreate( D.V(1), D.V(2), D.has("--dryrun") ); } );
+
+	AddFormat("account refresh", {}, {pAccount}, { {"--dryrun", pBool}, {"--all", pBool}},
+		LAMBDA { auto &D=*d; return U.AccountRefresh( D.v(1, U.AccountGetName(U.AccountGetDefault())), D.has("--all"), D.has("--dryrun") ); } );
+
+	AddFormat("account set-default", {pAccount}, {}, { {"--dryrun", pBool}},
+		LAMBDA { auto &D=*d; return U.AccountSetDefault( D.V(1), D.has("--dryrun") ); } );
+
+	AddFormat("account rm", {pAccount}, {}, { {"--dryrun", pBool}},
+		LAMBDA { auto &D=*d; return U.AccountRemove( D.V(1), D.has("--dryrun") ); } );
+
+	AddFormat("account ls", {}, {}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountDisplayAllNames( D.has("--dryrun") ); } );
+
+	AddFormat("account rename", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
+
+	AddFormat("account transferfrom", {pAccountFrom, pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountTransfer(D.V(1), D.V(2), stoi( D.V(3) ), D.v(4), D.has("--dryrun") ); } );
+
+	AddFormat("account transferto", {pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountTransfer(U.AccountGetName(U.AccountGetDefault()), D.V(1), stoi( D.V(2) ), D.v(3), D.has("--dryrun") ); } );
+
+	//======== ot asset ========
+
+	AddFormat("asset ls", {}, {}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AssetDisplayAllNames( D.has("--dryrun") ); } );
+
+	AddFormat("asset issue", {}, {pServer, pNym}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AssetIssue(	D.v(1, U.ServerGetName( U.ServerGetDefault())),
+																							D.v(2, U.NymGetName( U.NymGetDefault())),
+																							D.has("--dryrun") ); } );
+
+	AddFormat("asset new", {pNym}, {}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AssetNew(D.V(1), D.has("--dryrun") ); } );
+
+	AddFormat("asset rm", {pNym}, {}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AssetRemove(D.V(1), D.has("--dryrun") ); } );
+
+
+	//======== ot msg ========
 
 	AddFormat("msg ls", {}, {pNym}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.MsgDisplayForNym( D.v(1, U.NymGetName(U.NymGetDefault())), D.has("--dryrun") ); } );
@@ -313,44 +358,6 @@ void cCmdParser::Init() {
 	AddFormat("nym rename", {pNymMy, pNymNewName}, {}, { {"--dryrun", pBool} },
 			LAMBDA { auto &D=*d; return U.NymRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
 
-	//======== ot account ========
-
-	AddFormat("account new", {pAsset, pAccountNewName}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AccountCreate( D.V(1), D.V(2), D.has("--dryrun") ); } );
-
-	AddFormat("account refresh", {}, {pAccount}, { {"--dryrun", pBool}, {"--all", pBool}},
-		LAMBDA { auto &D=*d; return U.AccountRefresh( D.v(1, U.AccountGetName(U.AccountGetDefault())), D.has("--all"), D.has("--dryrun") ); } );
-
-	AddFormat("account set-default", {pAccount}, {}, { {"--dryrun", pBool}},
-		LAMBDA { auto &D=*d; return U.AccountSetDefault( D.V(1), D.has("--dryrun") ); } );
-
-	AddFormat("account rm", {pAccount}, {}, { {"--dryrun", pBool}},
-		LAMBDA { auto &D=*d; return U.AccountRemove( D.V(1), D.has("--dryrun") ); } );
-
-	AddFormat("account ls", {}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AccountDisplayAllNames( D.has("--dryrun") ); } );
-
-	AddFormat("account rename", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AccountRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
-
-	AddFormat("account transferfrom", {pAccountFrom, pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AccountTransfer(D.V(1), D.V(2), stoi( D.V(3) ), D.v(4), D.has("--dryrun") ); } );
-
-	AddFormat("account transferto", {pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AccountTransfer(U.AccountGetName(U.AccountGetDefault()), D.V(1), stoi( D.V(2) ), D.v(3), D.has("--dryrun") ); } );
-
-	//======== ot asset ========
-
-	AddFormat("asset ls", {}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AssetDisplayAllNames( D.has("--dryrun") ); } );
-
-	AddFormat("asset issue", {}, {pServer, pNym}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AssetIssue(	D.v(1, U.ServerGetName( U.ServerGetDefault())),
-																							D.v(2, U.NymGetName( U.NymGetDefault())),
-																							D.has("--dryrun") ); } );
-
-	AddFormat("asset new", {pNym}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AssetNew(D.V(1), D.has("--dryrun") ); } );
 
 	//======== ot server ========
 
