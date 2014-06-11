@@ -38,11 +38,10 @@ namespace nUse {
 		map<string, ID> mDefaultIDs;
 		const string mDataFolder;
 		const string mDefaultIDsFile;
-//		typedef std::function< const ID ( const string & NameOrID ) > tGetID;
+
 		typedef const ID ( cUseOT::*FPTR ) (const string &);
 
-//		map<subjectType, tGetID> subjectGetIDFunc;
-		map<subjectType, FPTR> subjectGetIDFunc;
+		map<subjectType, FPTR> subjectGetIDFunc; ///< Map to store pointers to GetID functions
 
 	private:
 
@@ -69,8 +68,6 @@ namespace nUse {
 		const string AccountGetName(const ID & accountID);
 		bool AccountSetName(const string & accountID, const string & NewAccountName);
 
-		VALID bool AccountCheckIfExists(const string & accountName);
-
 		HINT const vector<string> AccountGetAllNames();
 
 		EXEC bool AccountCreate(const string & assetName, const string & newAccountName, bool dryrun);
@@ -88,8 +85,6 @@ namespace nUse {
 		const string AssetGetContract(const string & asset);
 		const string AssetGetDefault(); // Get default asset, also known as purse
 		void AssetSetDefault(const std::string & assetName); // Set default asset, also known as purse
-
-		VALID bool AssetCheckIfExists(const string & asset);
 
 		HINT const vector<string> AssetGetAllNames();
 
@@ -124,8 +119,6 @@ namespace nUse {
 		const string NymGetName(const string & nymID);
 		bool NymSetName(const string & nymID, const string & newNymName);
 
-		VALID bool NymCheckIfExists(const string & nym);
-
 		HINT const vector<string> NymGetAllNames();
 
 		EXEC bool NymCheck(const string & nymName, bool dryrun);
@@ -144,8 +137,6 @@ namespace nUse {
 		const string ServerGetDefault();
 		const ID ServerGetId(const string & server); ///< Gets server ID both from name and ID with prefix
 		const string ServerGetName(const string & serverID);
-
-		VALID bool ServerCheckIfExists(const string & server);
 
 		HINT const vector<string> ServerGetAllNames();
 

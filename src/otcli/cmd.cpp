@@ -74,7 +74,7 @@ void cCmdParser::Init() {
 	cParamInfo pNym( "nym", "nym existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym validation");
-				return use.CheckIfExists(cUseOT::subjectType::Nym, data.Var(curr_word_ix + 1));
+			return use.CheckIfExists(cUseOT::subjectType::Nym, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Nym hinting");

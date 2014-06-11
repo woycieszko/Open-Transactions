@@ -959,7 +959,7 @@ static char* completionReadlineWrapper(const char *sofar , int number) {
 char ** completion(const char* text, int start, int end __attribute__((__unused__))) {
 	char **matches;
 	matches = (char **)NULL;
-//	matches = rl_completion_matches (text, completionReadlineWrapper);
+	matches = rl_completion_matches (text, completionReadlineWrapper);
 	_erro("Autocompletion refactoring - not working");
 	return (matches);
 
@@ -986,6 +986,8 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 	const int opt_repeat_help_each_nth_time = 5; // how often to remind user to run ot help on error
 
 	cout << endl << "For help type: ot help" << endl;
+
+	read_history("otcli-history.txt");
 
 	while ((buf = readline("ot command> "))!=NULL) { // <--- readline()
 		std::string word;
@@ -1028,6 +1030,9 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 			}
 		} // length
 	} // while
+	write_history("otcli-history.txt");
+	int maxHistory = 100; //TODO move this to settings
+	history_truncate_file("otcli-history.txt", maxHistory);
 	if (buf) { free(buf); buf=NULL; }
 	clear_history(); // http://cnswww.cns.cwru.edu/php/chet/readline/history.html#IDX11
 }

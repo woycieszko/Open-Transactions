@@ -46,7 +46,7 @@ int cOTCli::_Run(const vector<string> args_without_programname) {
 	auto useOT = std::make_shared<nUse::cUseOT>("Normal");
 
 	size_t nr=0;
-	for(auto arg: args) {
+	for(auto arg : args) {
 		if (arg=="--complete-shell") {
 			nOT::nOTHint::cInteractiveShell shell;
 

@@ -107,19 +107,6 @@ bool cUseOT::CheckIfExists(subjectType type, const string & subject) {
 	return false;
 }
 
-bool cUseOT::AccountCheckIfExists(const string & account) {
-	if(!Init()) return false;
-
-	ID accountID = AccountGetId(account);
-
-	if (!accountID.empty()) {
-		_dbg3("Account " + account + " exists");
-		return true;
-	}
-	_warn("Can't find this Account: " + account);
-	return false;
-}
-
 const vector<ID> cUseOT::AccountGetAllIds() {
 	if(!Init())
 	return vector<string> {};
@@ -347,19 +334,6 @@ bool cUseOT::AccountTransfer(const string & accountFrom, const string & accountT
 		return false;
 	}
 	return true;
-}
-
-bool cUseOT::AssetCheckIfExists(const string & asset) {
-	if(!Init()) return false;
-
-	ID assetID = AssetGetId(asset);
-
-	if (!assetID.empty()) {
-		_dbg3("Asset " + asset + " exists");
-		return true;
-	}
-	_warn("Can't find this asset: " + asset);
-	return false;
 }
 
 const vector<string> cUseOT::AssetGetAllNames() {
@@ -651,19 +625,6 @@ bool cUseOT::NymCreate(const string & nymName, bool dryrun) {
 	return true;
 }
 
-bool cUseOT::NymCheckIfExists(const string & nym) {
-	if(!Init()) return false;
-
-	ID nymID = NymGetId(nym);
-
-	if (!nymID.empty()) {
-		_dbg3("Nym " + nym + " exists");
-		return true;
-	}
-	_warn("Can't find this Nym: " + nym);
-	return false;
-}
-
 void cUseOT::NymGetAll() {
 	if(!Init())
 		return;
@@ -923,20 +884,6 @@ void cUseOT::ServerCheck() {
 	}
 	_info("Server " + mDefaultIDs.at("ServerID") + " is OK");
 }
-
-bool cUseOT::ServerCheckIfExists(const string & server) {
-	if(!Init()) return false;
-
-	ID serverID = ServerGetId(server);
-
-	if (!serverID.empty()) {
-		_dbg3("Server " + server + " exists");
-		return true;
-	}
-	_warn("Can't find this server: " + server);
-	return false;
-}
-
 
 const string cUseOT::ServerGetDefault() {
 	if(!Init())
