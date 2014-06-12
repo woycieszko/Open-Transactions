@@ -418,13 +418,8 @@ void cCmdParser::Init() {
 */
 }
 
-cCmdProcessing cCmdParser::StartProcessing(const vector<string> &words, shared_ptr<nUse::cUseOT> use ) {
-	return cCmdProcessing( shared_from_this() , words , use );
-}
-
 cCmdProcessing cCmdParser::StartProcessing(const string &words, shared_ptr<nUse::cUseOT> use ) {
-	_dbg3("Will split words: [" << words << "]");
-	return cCmdProcessing( shared_from_this() , nUtils::SplitString(words) , use );
+	return cCmdProcessing( shared_from_this() , words , use );
 }
 
 shared_ptr<cCmdFormat> cCmdParser::FindFormat( const cCmdName &name ) 
@@ -447,12 +442,13 @@ cCmdName::operator std::string() const { return mName; }
 
 // ========================================================================================================================
 
-cCmdProcessing::cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> commandLine, shared_ptr<nUse::cUseOT> use )
+cCmdProcessing::cCmdProcessing(shared_ptr<cCmdParser> parser, const string &commandLineString, shared_ptr<nUse::cUseOT> use )
 : 
 mStateParse(tState::never), mStateValidate(tState::never), mStateExecute(tState::never),
-mParser(parser), mCommandLine(commandLine), mUse(use)
+mParser(parser), mCommandLineString(commandLineString), mUse(use)
 { 
-	_dbg2("Creating processing of: " << DbgVector(commandLine) << " with use=" << use->DbgName() );
+	mCommandLine = nUtils::SplitString( mCommandLineString );
+	_dbg2("Creating processing of: " << DbgVector(mCommandLine) << " from (" << mCommandLineString <<") " << " with use=" << use->DbgName() );
 }
 
 cCmdProcessing::~cCmdProcessing() 
@@ -501,7 +497,7 @@ void cCmdProcessing::Parse() {
 }
 
 void cCmdProcessing::_Parse() {
-	int _dbg_ignore=50;
+	// int _dbg_ignore=50;
 
 	// mCommandLine = ot, msg, sendfrom, alice, bob, hello
 	// mFormat.erase ? // remove old format, we parse something new [doublecheck]
@@ -526,8 +522,9 @@ void cCmdProcessing::_Parse() {
 	}
 
 	_dbg3("Alloc data");  
-	mData = std::make_shared<cCmdData>();
+	mData = std::make_shared<cCmdDataParse>();
 	_dbg3("Got new data");
+	mData->mOrginalCommand = mCommandLineString;
 
 	int phase=0; // 0: cmd name  1:var, 2:varExt  3:opt   9:end
 	try {
@@ -677,8 +674,17 @@ void cCmdProcessing::_Parse() {
 //                    ^ pos=21          
 
 vector<string> cCmdProcessing::UseComplete(int char_pos) {
-	vector<string> ret;
-	return ret;
+	if (mStateParse != tState::succeeded) Parse();
+	// if (mStateValidate != tState::succeeded) Validate();
+	if (mStateParse != tState::succeeded) { _dbg1("Failed to parse."); }
+	//if (mStateValidate != tState::succeeded) { _dbg1("Failed to validate."); }
+
+	try {
+		vector<string> ret;
+		return ret;
+	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+
+	_erro("Dead code hit?");	return vector<string>(); // should not happen 
 }
 
 void cCmdProcessing::UseExecute() { // TODO write as a template for all the 3 wrappres that set state ??
@@ -931,6 +937,7 @@ void _cmd_test_completion( shared_ptr<cUseOT> use ) {
 	,"ot msg send ali~"
 	,"ot msg sendfrom ali~ bo"
 	,"ot msg sendfrom ali bobxxxxx~"
+	,"ot msg sendfrom ali       bob      subject message_hello --cc charlie --cc dave --prio 4 --cc eve --dry~ --cc xray"
 	};
 	for (const auto cmd_raw : alltest) {
 		try {
@@ -949,7 +956,10 @@ void _cmd_test_completion( shared_ptr<cUseOT> use ) {
 			vector<string> completions = processing.UseComplete( pos  );
 			_note("Completions: " << DbgVector(completions));
 
-		} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+		} 
+		catch (const myexception &e) { e.Report(); } 
+		catch (const std::exception &e) { _erro("Exception " << e.what()); }
+		// continue anyway
 	}
 }
 

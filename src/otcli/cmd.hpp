@@ -19,6 +19,7 @@ class cCmdParser;
 class cCmdProcessing;
 class cCmdFormat;
 class cCmdData;
+class cCmdDataParse;
 
 class cCmdName;
 class cParamInfo;
@@ -78,7 +79,7 @@ class cCmdParser : public enable_shared_from_this<cCmdParser> { MAKE_CLASS_NAME(
 		cCmdParser();
 		~cCmdParser(); // let's instantize default destr in all TUs so compilation will fail (without this line) on unique_ptr on not-complete types trololo - B. Stroustrup
 
-		cCmdProcessing StartProcessing(const vector<string> &words, shared_ptr<nUse::cUseOT> use );
+	//	cCmdProcessing StartProcessing(const vector<string> &words, shared_ptr<nUse::cUseOT> use );
 		cCmdProcessing StartProcessing(const string &words, shared_ptr<nUse::cUseOT> use );
 
 		shared_ptr<cCmdFormat> FindFormat( const cCmdName &name ) throw(cErrParseName);
@@ -100,9 +101,10 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 
 		shared_ptr<cCmdParser> mParser; // our "parent" parser to use here
 
+		string mCommandLineString; // as the string from user e.g. "ot    msg sendfrom 'alice'"
 		vector<string> mCommandLine; // the words of command to be parsed
 
-		shared_ptr<cCmdData> mData; // our parsed command as data; NULL if error/invalid
+		shared_ptr<cCmdDataParse> mData; // our parsed command as data; NULL if error/invalid
 		shared_ptr<cCmdFormat> mFormat; // the selected CmdFormat template; NULL if error/invalid
 
 		shared_ptr<nUse::cUseOT> mUse; // this will be used e.g. in Parse() - passed to called validations, in UseExecute and UseComplete etc
@@ -112,7 +114,7 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 		virtual void _UseExecute(); // throw if failed
 
 	public:
-		cCmdProcessing(shared_ptr<cCmdParser> parser, vector<string> commandLine, shared_ptr<nUse::cUseOT> use );
+		cCmdProcessing(shared_ptr<cCmdParser> parser, const string &commandLineString, shared_ptr<nUse::cUseOT> use );
 		virtual ~cCmdProcessing();
 
 		virtual void Parse(); // parse into mData, mFormat
@@ -222,6 +224,23 @@ class cCmdData {  MAKE_CLASS_NAME("cCmdData");
 	protected:
 		void AssertLegalOptName(const string & name) const throw(cErrArgIllegal); // used internally to catch programming errors e.g. in binding lambdas
 }; 
+
+// ============================================================================
+
+/**
+Command data, but with the details of parsing - e.g. to explain/show user exact errors
+or to run completions that work on characters instead of data/arg numbers
+*/
+class cCmdDataParse : public cCmdData { MAKE_CLASS_NAME("cCmdDataParse");
+	protected:
+		friend class cCmdProcessing;
+
+		string mOrginalCommand; // full orginal command as given e.g. by the user, "ot msg     send   bob    'alice' title"
+		vector<int> mWordIx2CharIx; // mWordIx2CharIx[3] = 20, means that 4th word starts at character position 20 in the orginal command string
+
+	public:
+
+};
 
 // ============================================================================
 
