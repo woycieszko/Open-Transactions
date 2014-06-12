@@ -294,6 +294,11 @@ void cCmdParser::Init() {
 	AddFormat("account transferto", {pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountTransfer(U.AccountGetName(U.AccountGetDefault()), D.V(1), stoi( D.V(2) ), D.v(3), D.has("--dryrun") ); } );
 
+	//======== ot account-in ========
+
+	AddFormat("account-in ls", {}, {pAccountMy}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return U.AccountInDisplay(D.v(1, U.AccountGetName(U.AccountGetDefault())), D.has("--dryrun") ); } );
+
 	//======== ot asset ========
 
 	AddFormat("asset ls", {}, {}, { {"--dryrun", pBool} },

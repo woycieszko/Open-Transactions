@@ -123,7 +123,7 @@ const int64_t cUseOT::AccountGetBalance(const string & accountName) {
 	if(!Init())
 		return 0; //FIXME
 
-	int64_t balance = OTAPI_Wrap::GetAccountWallet_Balance	( AccountGetId(accountName) );
+	int64_t balance = OTAPI_Wrap::GetAccountWallet_Balance ( AccountGetId(accountName) );
 	return balance;
 }
 
@@ -194,10 +194,10 @@ bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
 			ID accountServerID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
 			ID accountNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
 			if ( madeEasy.retrieve_account(accountServerID, accountNymID, accountID, true) ) { // forcing download
-				_info("Account " + accountName + "(" + accountID +  ")" + " retrieval success from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
+				_info("Account " + AccountGetName(accountID) + "(" + accountID +  ")" + " retrieval success from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
 				++accountsRetrieved;
 			}else
-				_erro("Account " + accountName + "(" + accountID +  ")" + " retrieval failure from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
+				_erro("Account " + AccountGetName(accountID) + "(" + accountID +  ")" + " retrieval failure from server " + ServerGetName(accountServerID) + "(" + accountServerID +  ")");
 		}
 		string count = to_string(accountsRetrieved) + "/" + to_string(accountCount);
 		if (accountsRetrieved == accountCount) {
@@ -335,6 +335,55 @@ bool cUseOT::AccountTransfer(const string & accountFrom, const string & accountT
 	}
 	return true;
 }
+
+bool cUseOT::AccountInDisplay(const string & account, bool dryrun) {
+	_fact("account-in ls " << account);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	ID accountID = AccountGetId(account);
+	ID accountServerID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
+	ID accountNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
+
+	string inbox = OTAPI_Wrap::LoadInbox(accountServerID, accountNymID, accountID); // Returns NULL, or an inbox.
+
+	if (inbox.empty()) {
+		_info("Unable to load inbox for account " << AccountGetName(accountID)<< "(" << accountID << "). Perhaps it doesn't exist yet?");
+		return false;
+	}
+
+	int32_t transactionCount = OTAPI_Wrap::Ledger_GetCount(accountServerID, accountNymID, accountID, inbox);
+
+	if (transactionCount > 0) {
+	nUtils::DisplayStringEndl(cout, "Inbox for an asset account " + AccountGetName(accountID) + "(" + accountID + "):");
+	nUtils::DisplayStringEndl(cout, "Idx  Amt  Type        Txn# InRef#|User / Acct");
+	nUtils::DisplayStringEndl(cout, "---------------------------------|(from or to)");
+	  for (int32_t index = 0; index < transactionCount; ++index) {
+			string transaction = OTAPI_Wrap::Ledger_GetTransactionByIndex(accountServerID, accountNymID, accountID, inbox, index);
+			int64_t transactionID = OTAPI_Wrap::Ledger_GetTransactionIDByIndex(accountServerID, accountNymID, accountID, inbox, index);
+			int64_t refNum = OTAPI_Wrap::Transaction_GetDisplayReferenceToNum(accountServerID, accountNymID, accountID, transaction);
+			int64_t amount = OTAPI_Wrap::Transaction_GetAmount(accountServerID, accountNymID, accountID, transaction);
+			string transactionType = OTAPI_Wrap::Transaction_GetType(accountServerID, accountNymID, accountID, transaction);
+			string senderNymID = OTAPI_Wrap::Transaction_GetSenderUserID(accountServerID, accountNymID, accountID, transaction);
+			string senderAcctID = OTAPI_Wrap::Transaction_GetSenderAcctID(accountServerID, accountNymID, accountID, transaction);
+			string recipientNymID = OTAPI_Wrap::Transaction_GetRecipientUserID(accountServerID, accountNymID, accountID, transaction);
+			string recipientAcctID = OTAPI_Wrap::Transaction_GetRecipientAcctID(accountServerID, accountNymID, accountID, transaction);
+
+			//TODO Check if Transaction information needs to be verified!!!
+
+			nUtils::DisplayStringEndl(cout, to_string(index) + "    " + to_string(amount) + "    " + transactionType + "    " + to_string(transactionID) + "    " + to_string(refNum)
+																											 + "    " + "U:" + NymGetName(accountNymID) + "(" + accountNymID + ")" + "    "
+																											 + "A:" + AccountGetName( accountID ) + "(" + accountID + ")");
+		}
+	  return true;
+	} else {
+		_info("There is no transactions in inbox for account "  << AccountGetName(accountID)<< "(" << accountID << ")");
+		return true;
+	}
+	return false;
+}
+
+
 
 const vector<string> cUseOT::AssetGetAllNames() {
 	if(!Init())

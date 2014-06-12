@@ -78,6 +78,10 @@ namespace nUse {
 		EXEC bool AccountSetDefault(const string & account, bool dryrun);
 		EXEC bool AccountTransfer(const string & accountFrom, const string & accountTo, const int64_t & amount, const string & note, bool dryrun);
 
+		//================= account-in =================
+
+		EXEC bool AccountInDisplay(const string & account, bool dryrun);
+
 		//================= asset =================
 
 		const ID AssetGetId(const string & asset); ///< Gets asset ID both from name and ID with prefix

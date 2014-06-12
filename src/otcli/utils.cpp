@@ -336,7 +336,7 @@ void cEnvUtils::CloseFile() {
 }
 
 void  cEnvUtils::OpenEditor() {
-	char* editor = std::getenv("OT_EDITOR");
+	char* editor = std::getenv("OT_EDITOR"); //TODO Read editor from configuration file
 	if (editor == NULL)
 		editor = std::getenv("VISUAL");
 	if (editor == NULL)
@@ -348,7 +348,8 @@ void  cEnvUtils::OpenEditor() {
 	else
 		command = "/usr/bin/editor " + mFilename;
 	_dbg3("Opening editor with command: " << command);
-	system( command.c_str() );
+	if ( system( command.c_str() ) == -1 )
+		_erro("Cannot execute system command: " << command);
 }
 
 const string cEnvUtils::ReadFromTmpFile() {
