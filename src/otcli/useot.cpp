@@ -347,6 +347,8 @@ bool cUseOT::AccountInDisplay(const string & account, bool dryrun) {
 
 	string inbox = OTAPI_Wrap::LoadInbox(accountServerID, accountNymID, accountID); // Returns NULL, or an inbox.
 
+	_mark( "Account inbox:" << endl << inbox);
+
 	if (inbox.empty()) {
 		_info("Unable to load inbox for account " << AccountGetName(accountID)<< "(" << accountID << "). Perhaps it doesn't exist yet?");
 		return false;
@@ -361,6 +363,7 @@ bool cUseOT::AccountInDisplay(const string & account, bool dryrun) {
 	  for (int32_t index = 0; index < transactionCount; ++index) {
 			string transaction = OTAPI_Wrap::Ledger_GetTransactionByIndex(accountServerID, accountNymID, accountID, inbox, index);
 			int64_t transactionID = OTAPI_Wrap::Ledger_GetTransactionIDByIndex(accountServerID, accountNymID, accountID, inbox, index);
+			_mark( "Transaction " << transactionID << transaction );
 			int64_t refNum = OTAPI_Wrap::Transaction_GetDisplayReferenceToNum(accountServerID, accountNymID, accountID, transaction);
 			int64_t amount = OTAPI_Wrap::Transaction_GetAmount(accountServerID, accountNymID, accountID, transaction);
 			string transactionType = OTAPI_Wrap::Transaction_GetType(accountServerID, accountNymID, accountID, transaction);
@@ -372,8 +375,8 @@ bool cUseOT::AccountInDisplay(const string & account, bool dryrun) {
 			//TODO Check if Transaction information needs to be verified!!!
 
 			nUtils::DisplayStringEndl(cout, to_string(index) + "    " + to_string(amount) + "    " + transactionType + "    " + to_string(transactionID) + "    " + to_string(refNum)
-																											 + "    " + "U:" + NymGetName(accountNymID) + "(" + accountNymID + ")" + "    "
-																											 + "A:" + AccountGetName( accountID ) + "(" + accountID + ")");
+																											 + "    " + "U:" + NymGetName(senderNymID) + "(" + senderNymID + ")" + "    "
+																											 + "A:" + AccountGetName( senderAcctID ) + "(" + senderAcctID + ")");
 		}
 	  return true;
 	} else {
@@ -383,7 +386,35 @@ bool cUseOT::AccountInDisplay(const string & account, bool dryrun) {
 	return false;
 }
 
-
+//bool cUseOT::AccountInAccept(const string & account, bool dryrun) {
+//	_fact("account-in accept " << account);
+//	if(dryrun) return false;
+//	if(!Init()) return false;
+//
+//	ID accountID = AccountGetId(account);
+//	ID accountServerID = OTAPI_Wrap::GetAccountWallet_ServerID(accountID);
+//	ID accountNymID = OTAPI_Wrap::GetAccountWallet_NymID(accountID);
+//
+//	const string inbox = OTAPI_Wrap::LoadInbox(accountServerID, accountNymID, accountID); // Returns NULL, or an inbox.
+//
+//	OT_ME madeEasy;
+//
+//	madeEasy.process_inbox(accountServerID, accountNymID, accountID, inbox);
+//	// User may have already chosen indices (passed in) so we don't want to
+//	// re-download the inbox unless we HAVE to. But if the hash has changed, that's
+//	// one clear-cut case where we _do_ have to. Otherwise our balance agreement
+//	// will fail anyway. So hopefully we can let OT "be smart about it" here instead
+//	// of just forcing it to download every time even when unnecessary.
+//	//
+////	if (!MsgUtil.getIntermediaryFiles(strServerID, strMyNymID, strMyAcctID)) // boolean bForceDownload=false
+////	{
+////			OTAPI_Wrap::Output(0, "Unable to download necessary intermediary files for this inbox/account. (Failure.)\n");
+////			return -1;
+////	}
+//
+//
+//	return false;
+//}
 
 const vector<string> cUseOT::AssetGetAllNames() {
 	if(!Init())
