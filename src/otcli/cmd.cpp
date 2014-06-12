@@ -15,6 +15,12 @@ using namespace nUse;
 
 // ========================================================================================================================
 
+void _cmd_test_completion(  shared_ptr<cUseOT> use  );
+void _cmd_test_tree(  shared_ptr<cUseOT> use  );
+void _cmd_test(  shared_ptr<cUseOT> use  );
+
+// ========================================================================================================================
+
 class cCmdParser_pimpl {
 	friend class cCmdParser;
 
@@ -249,6 +255,7 @@ void cCmdParser::Init() {
 	typedef shared_ptr<cCmdData> tData;
 	typedef nUse::cUseOT & tUse;
 	typedef cCmdExecutable::tExitCode tExit;
+	#define LAMBDA [] (tData d, tUse U) -> tExit
 
 	auto & pFrom = pNymFrom;
 	auto & pTo = pNymTo;
@@ -256,10 +263,10 @@ void cCmdParser::Init() {
 	auto & pMsg = pSubject; // TODO
 	auto & pInt = pOnceInt;
 
-	#define LAMBDA [] (tData d, tUse U) -> tExit
-
 	auto this_shared_do_not_use = shared_from_this(); // make_shared<cCmdProcessing>(this);
 	weak_ptr<cCmdParser> this_weak( this_shared_do_not_use );
+
+	//======== special, test, developer: ========
 
 	AddFormat("help", {}, {}, {},
 		[this_weak] (tData d, tUse U) -> tExit { auto &D=*d; 
@@ -267,6 +274,18 @@ void cCmdParser::Init() {
 			this_lock->PrintUsage();
 			return true;
 		} );
+
+	AddFormat("x", {}, {}, {},
+		LAMBDA { auto &D=*d; auto Utmp = make_shared<cUseOT>( U ); _cmd_test(Utmp); return true; } );
+
+	AddFormat("test", {}, {}, {},
+		LAMBDA { auto &D=*d; auto Utmp = make_shared<cUseOT>( U ); _cmd_test(Utmp); return true; } );
+
+	AddFormat("test tab", {}, {}, {},
+		LAMBDA { auto &D=*d; auto Utmp = make_shared<cUseOT>( U ); _cmd_test(Utmp); return true; } );
+
+	AddFormat("test tree", {}, {}, {},
+		LAMBDA { auto &D=*d; auto Utmp = make_shared<cUseOT>( U ); _cmd_test(Utmp); return true; } );
 
 	//======== ot account ========
 
@@ -945,10 +964,7 @@ void cCmdData::AddOpt(const string &name, const string &value) throw(cErrArgIlle
 
 // ========================================================================================================================
 
-void _cmd_test_completion(  shared_ptr<cUseOT> use  );
-void _cmd_test_tree(  shared_ptr<cUseOT> use  );
-
-void _cmd_test( shared_ptr<cUseOT> use ) {
+void _cmd_test(  shared_ptr<cUseOT> use  ) {
 	_cmd_test_completion( use );
 //	_cmd_test_tree();
 }
