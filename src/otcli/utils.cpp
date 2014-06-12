@@ -346,7 +346,7 @@ void  cEnvUtils::OpenEditor() {
 	if (editor != NULL)
 		command = ToStr(editor) + " " + mFilename;
 	else
-		command = "vim " + mFilename;
+		command = "/usr/bin/editor " + mFilename;
 	_dbg3("Opening editor with command: " << command);
 	system( command.c_str() );
 }
