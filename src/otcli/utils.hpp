@@ -274,6 +274,8 @@ vector<T>& operator+=(vector<T> &a, const vector<T> &b) {
 
 // ====================================================================
 
+int RangesFindPosition(const vector<int> &R, int pos);
+
 }; // namespace nUtils 
 
 }; // namespace nOT

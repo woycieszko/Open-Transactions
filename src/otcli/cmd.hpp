@@ -102,7 +102,7 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 		shared_ptr<cCmdParser> mParser; // our "parent" parser to use here
 
 		string mCommandLineString; // as the string from user e.g. "ot    msg sendfrom 'alice'"
-		vector<string> mCommandLine; // the words of command to be parsed
+		vector<string> mCommandLine; // the words of command to be parsed; Warning: set only from Parse() due to character-spaces etc processing
 
 		shared_ptr<cCmdDataParse> mData; // our parsed command as data; NULL if error/invalid
 		shared_ptr<cCmdFormat> mFormat; // the selected CmdFormat template; NULL if error/invalid

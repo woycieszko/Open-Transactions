@@ -447,8 +447,8 @@ cCmdProcessing::cCmdProcessing(shared_ptr<cCmdParser> parser, const string &comm
 mStateParse(tState::never), mStateValidate(tState::never), mStateExecute(tState::never),
 mParser(parser), mCommandLineString(commandLineString), mUse(use)
 { 
-	mCommandLine = nUtils::SplitString( mCommandLineString );
-	_dbg2("Creating processing of: " << DbgVector(mCommandLine) << " from (" << mCommandLineString <<") " << " with use=" << use->DbgName() );
+	mCommandLine = vector<string>{}; // will be set in Parse()
+	_dbg2("Creating processing from (" << mCommandLineString <<") " << " with use=" << use->DbgName() );
 }
 
 cCmdProcessing::~cCmdProcessing() 
@@ -499,32 +499,60 @@ void cCmdProcessing::Parse() {
 void cCmdProcessing::_Parse() {
 	// int _dbg_ignore=50;
 
-	// mCommandLine = ot, msg, sendfrom, alice, bob, hello
-	// mFormat.erase ? // remove old format, we parse something new [doublecheck]
+	if (mCommandLineString.empty()) { const string s="Command for processing was empty (string)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
 
-	if (mCommandLine.empty()) {
-		_warn("Command for processing is totally empty");
-		throw cErrParseSyntax("Command was empty"); // <--- THROW
+	mData = std::make_shared<cCmdDataParse>();
+	mData->mOrginalCommand = mCommandLineString;
+
+	{
+		// char processing (remove double-space, parse quotations etc)
+		// TODO: quotation "..."
+		//   ot  msg  ls
+		// 0123456789012 char_pos
+		// ot,msg,ls vector
+		// mWordIx2CharIx [0]=>2, [1]=>6, [2]=>11
+		string curr_word="";
+		size_t curr_word_pos=0; // at which pos that current word had started
+		for (size_t pos=0; pos<mCommandLineString.size(); ++pos) { // each character
+			char c = mCommandLineString.at(pos);
+			if (c==' ') { // white char
+				if (curr_word.size()) {  // if there was a previous word
+					mCommandLine.push_back(curr_word);
+					mData->mWordIx2CharIx.push_back(curr_word_pos);
+					curr_word="";
+				}
+			}
+			else { // normal char
+				if (curr_word.size()==0) curr_word_pos = pos; // this is the first character of current (new) word
+				curr_word += c;
+			}
+		} // for each char
+
+		if (curr_word.size()) {
+			mCommandLine.push_back(curr_word);
+			mData->mWordIx2CharIx.push_back(curr_word_pos);
+		}
+		_mark("Vector of words: " << DbgVector(mCommandLine));
+		_mark("Words position mWordIx2CharIx=" << DbgVector(mData->mWordIx2CharIx));
 	}
 
+	for (int i=0; i<20; ++i) {
+		if (i>=mCommandLineString.size()) break;
+		const char c = mCommandLineString.at(i);
+		const int word_nr = RangesFindPosition( mData->mWordIx2CharIx , i); 
+		_dbg3("char '" << c << "' on position " << i << " is in word_nr="<<word_nr);
+	}
+
+	if (mCommandLine.empty()) { const string s="Command for processing was empty (had no words)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
+
+	// -----------------------------------
 	if (mCommandLine.at(0) == "help") mCommandLine.insert( mCommandLine.begin() , "ot"); // change "help" to "ot help"
-
-	if (mCommandLine.at(0) != "ot") {
-		_warn("Command for processing is mallformed");
-	}
+	if (mCommandLine.at(0) != "ot") _warn("Command for processing is mallformed");
 	mCommandLine.erase( mCommandLine.begin() ); // delete the first "ot" ***
 	// mCommandLine = msg, sendfrom, alice, bob, hello
 	_dbg1("Parsing (after erasing ot) : " << DbgVector(mCommandLine) );
 
-	if (mCommandLine.empty()) {
-		_warn("Command for processing is empty (after erasing ot)");
-		throw cErrParseSyntax("Command was empty (besides prefix)"); // <--- THROW
-	}
-
-	_dbg3("Alloc data");  
-	mData = std::make_shared<cCmdDataParse>();
-	_dbg3("Got new data");
-	mData->mOrginalCommand = mCommandLineString;
+	if (mCommandLineString.empty()) { const string s="Command for processing was empty (besides prefix)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
 
 	int phase=0; // 0: cmd name  1:var, 2:varExt  3:opt   9:end
 	try {

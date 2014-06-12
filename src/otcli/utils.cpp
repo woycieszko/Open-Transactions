@@ -368,6 +368,19 @@ const string cEnvUtils::Compose() {
 
 #endif
 
+// ====================================================================
+// algorthms
+
+/**
+returns 0 if R is empty; else, number of R[i] before which the position is
+*/
+int RangesFindPosition(const vector<int> &R, int pos) {
+	for(size_t i=0; i<R.size(); i++) {
+		if (pos < R[i]) return i;
+	}
+	return 0;
+}
+
 }; // namespace nUtil
 
 
