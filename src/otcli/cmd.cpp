@@ -666,7 +666,12 @@ void cCmdProcessing::_Parse() {
 	}
 }
 
-vector<string> cCmdProcessing::UseComplete() {
+//    0   1        2     3   4    5     word (as seend by Parse)
+// ot msg sendfrom alice bob --cc dave
+// ----- name ---- arg=1 2   ---3----   any_argument
+//                    ^ pos=21          
+
+vector<string> cCmdProcessing::UseComplete(int char_pos) {
 	vector<string> ret;
 	return ret;
 }
@@ -901,9 +906,51 @@ void cCmdData::AddOpt(const string &name, const string &value) throw(cErrArgIlle
 
 // ========================================================================================================================
 
-void _cmd_test( shared_ptr<cUseOT> use ) {
-	_mark("TEST TREE");
+void _cmd_test_completion(  shared_ptr<cUseOT> use  );
+void _cmd_test_tree(  shared_ptr<cUseOT> use  );
 
+void _cmd_test( shared_ptr<cUseOT> use ) {
+	_cmd_test_completion( use );
+//	_cmd_test_tree();
+}
+
+void _cmd_test_completion( shared_ptr<cUseOT> use ) {
+	_mark("TEST COMPLETION");
+	shared_ptr<cCmdParser> parser(new cCmdParser);
+	parser->Init();
+
+	auto alltest = vector<string>{ ""
+	,"~"
+	,"ot~"
+	,"ot msg send~ ali"
+	,"ot msg send ali~"
+	,"ot msg sendfrom ali~ bo"
+	,"ot msg sendfrom ali bobxxxxx~"
+	};
+	for (const auto cmd_raw : alltest) {
+		try {
+			if (!cmd_raw.length()) continue;
+
+			auto pos = cmd_raw.find_first_of("~");
+			if (pos == string::npos) {
+				_erro("Bad example - no TAB position given!");
+				continue; // <---
+			}
+			auto cmd = cmd_raw; 
+			cmd.erase( pos , 1 );
+
+			_mark("====== Testing completion: [" << cmd << "] for position pos=" << pos << " (from cmd_raw="<<cmd_raw<<")" );
+			auto processing = parser->StartProcessing(cmd, use);
+			vector<string> completions = processing.UseComplete( pos  );
+			_note("Completions: " << DbgVector(completions));
+
+		} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+	}
+}
+
+
+void _cmd_test_tree( shared_ptr<cUseOT> use ) {
+	_mark("TEST TREE");
 	shared_ptr<cCmdParser> parser(new cCmdParser);
 	parser->Init();
 

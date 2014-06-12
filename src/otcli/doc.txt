@@ -11,8 +11,17 @@ main()
 -> cOTCli::Run() 
 --> shell.runEditline(useOT); - main loop that is a shell that reads commands
 ---> on ENTER: cCmdParser() - Parse(), Validate(), UseExecute()
----> on TAB: cCmdParser() - UseComplete()
-nNewcli::cmd_test(useOT);
+
+---> on TAB: 
+----> completionReadlineWrapper()
+-----> current_completion = gReadlineHandleParser -> StartProcessing (on nr==0)
+------> current_completion->UseComplete() + save results (on nr==0)
+-----> send back results (on nr==1,2,3...)
+
+TAB-Completion mechanics:
+cCmdProcessing::UseComplete() returns vector of strings [will first use Parse + Validate if needed]
+strings candidates are built by calling currently-edited-parameter
+
 
 === TEST CASE ===
 

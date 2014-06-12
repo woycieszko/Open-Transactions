@@ -923,21 +923,34 @@ bool my_rl_wrapper_debug; // external
 // (done with number=0) is an error (at least currently, in future we might cache various completion
 // arrays, or recalculate on change)
 
-shared_ptr<nNewcli::cCmdParser> gHandleParser;
+shared_ptr<nNewcli::cCmdParser> gReadlineHandleParser;
 
-static char* completionReadlineWrapper(const char *sofar , int number) { // Before calling this function gHandleParser must be set
+/** 
+Caller: before calling this function gReadlineHandleParser must be set!
+Caller: you must free the returned char* memory if not NULL! (this will be done by readline lib implementation that calls us)
+*/
+static char* CompletionReadlineWrapper(const char *sofar , int number) { 
+	// sofar - current word,  number - number of question / of word to be returned
+	// rl_line_buffer - current ENTIER line
+	// rl_point - current CURSOR position
+
 	bool dbg = my_rl_wrapper_debug;
-	Assert( !(gHandleParser == nullptr), "gHandleParser must be set before calling this function");
-	if (dbg) _dbg3("sofar="<<sofar<<" number="<<number<<" rl_line_buffer="<<rl_line_buffer<<endl);
-	string line;
-	if (rl_line_buffer) line = rl_line_buffer;
-	line = line.substr(0, rl_point); // Complete from cursor position
+	dbg=true;
+	Assert( !(gReadlineHandleParser == nullptr), "gReadlineHandleParser must be set before calling this function");
+	if (dbg||1) _mark("sofar="<<sofar<<" number="<<number<<" rl_line_buffer="<<rl_line_buffer<<endl);
+
+	string line_all;
+	if (rl_line_buffer) line_all = rl_line_buffer; // <<<
+	string line = line_all.substr(0, rl_point); // Complete from cursor position
+
 
 	static vector <string> completions;
 	if (number == 0) {
 		if (dbg) _dbg3("Start autocomplete (during first callback, number="<<number<<")");
-//		completions = gHandleParser->Complete(line);
-		if (dbg)nOT::nUtils::DbgDisplayVectorEndl(completions); //TODO: display in debug
+//		completions = gReadlineHandleParser->Complete(line);
+		completions = {"alice","bob","sendfrom","sendto"};
+		completions = WordsThatMatch( sofar, completions);
+//		if (dbg) nOT::nUtils::DbgDisplayVectorEndl(completions); //TODO: display in debug
 		if (dbg) _dbg3("Done autocomplete (during first callback, number="<<number<<")");
 	}
 
@@ -958,7 +971,7 @@ static char* completionReadlineWrapper(const char *sofar , int number) { // Befo
 char ** completion(const char* text, int start, int end __attribute__((__unused__))) {
 	char **matches;
 	matches = (char **)NULL;
-	matches = rl_completion_matches (text, completionReadlineWrapper);
+	matches = rl_completion_matches (text, CompletionReadlineWrapper);
 	_erro("Autocompletion refactoring - not working");
 	return (matches);
 
@@ -967,6 +980,7 @@ char ** completion(const char* text, int start, int end __attribute__((__unused_
 void cInteractiveShell::runEditline(shared_ptr<nUse::cUseOT> use) {
 	try {
 		_runEditline(use);
+
 	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 }
 
@@ -979,7 +993,7 @@ void cInteractiveShell::_runEditline(shared_ptr<nUse::cUseOT> use) {
 	rl_bind_key('\t',rl_complete);
 
 	auto parser = make_shared<nNewcli::cCmdParser>();
-	gHandleParser = parser;
+	gReadlineHandleParser = parser;
 	parser->Init();
 	
 	int said_help=0, help_needed=0;

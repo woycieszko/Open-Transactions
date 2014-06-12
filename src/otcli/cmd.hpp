@@ -119,7 +119,7 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 		virtual void Validate(); // detects validation errors; Might report the error (or maybe throw or save status in *this, depending on this->mUse settings)
 		virtual void UseExecute(); // execute the command
 
-		vector<string> UseComplete(); // hint the possible completions (aka tab-completion)
+		vector<string> UseComplete(int char_pos); // hint the possible completions (aka tab-completion)
 };
 
 /**
