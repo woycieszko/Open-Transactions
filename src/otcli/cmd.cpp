@@ -520,6 +520,7 @@ void cCmdProcessing::Parse() {
 
 void cCmdProcessing::_Parse() {
 	// int _dbg_ignore=50;
+	bool test_char2word = true; // run a detailed test on char to word conversion
 
 	if (mCommandLineString.empty()) { const string s="Command for processing was empty (string)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
 
@@ -529,9 +530,15 @@ void cCmdProcessing::_Parse() {
 	{
 		// char processing (remove double-space, parse quotations etc)
 		// TODO: quotation "..."
-		//   ot  msg  ls
-		// 0123456789012 char_pos
-		// ot,msg,ls vector
+		//     string |ot  msg  ls  bob  --all  --color red  --reload  --color blue
+		// char_pos   |012345678901234567890123456789012345678901234567890123456789
+		// word_ix    |0   1    2   3    4      5       6     7        8
+		// any_arg    |         1   2    3      4             5        6
+		// cmd name        "msg ls"
+		// Opt("--color")                              red,                    blue
+		// Opt("--reload")                                    ""
+		// Arg(1)                   bob
+		// vector     =ot,msg,ls 
 		// mWordIx2CharIx [0]=>2, [1]=>6, [2]=>11
 		string curr_word="";
 		size_t curr_word_pos=0; // at which pos that current word had started
@@ -558,12 +565,10 @@ void cCmdProcessing::_Parse() {
 		_mark("Words position mWordIx2CharIx=" << DbgVector(mData->mWordIx2CharIx));
 	}
 
-	for (int i=0; i<20; ++i) {
-		if (i>=mCommandLineString.size()) break;
+	if (test_char2word) { for (int i=0; i<mCommandLineString.size(); ++i) {
 		const char c = mCommandLineString.at(i);
-		const int word_nr = RangesFindPosition( mData->mWordIx2CharIx , i); 
-		_dbg3("char '" << c << "' on position " << i << " is in word_nr="<<word_nr);
-	}
+		_dbg3("char '" << c << "' on position " << i << " is inside word: " << mData->CharIx2WordIx(i) 	);
+	} }
 
 	if (mCommandLine.empty()) { const string s="Command for processing was empty (had no words)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
 
@@ -730,6 +735,7 @@ vector<string> cCmdProcessing::UseComplete(int char_pos) {
 	//if (mStateValidate != tState::succeeded) { _dbg1("Failed to validate."); }
 
 	try {
+		_mark("Completion at pos="<<char_pos);
 		vector<string> ret;
 		return ret;
 	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
@@ -963,6 +969,14 @@ void cCmdData::AddOpt(const string &name, const string &value) throw(cErrArgIlle
 	} else {
 		find->second.push_back( value );
 	}	
+}
+
+// ========================================================================================================================
+
+int cCmdDataParse::CharIx2WordIx(int char_ix) const {
+	int word_ix = RangesFindPosition( mWordIx2CharIx , char_ix );
+	ASERT(  (word_ix >= 0) ); 
+	// TODO assert versus number of known words?
 }
 
 // ========================================================================================================================

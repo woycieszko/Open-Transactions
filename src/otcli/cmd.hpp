@@ -240,6 +240,8 @@ class cCmdDataParse : public cCmdData { MAKE_CLASS_NAME("cCmdDataParse");
 
 	public:
 
+		int CharIx2WordIx(int char_ix) const;
+
 };
 
 // ============================================================================
