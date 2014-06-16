@@ -310,10 +310,10 @@ void cCmdParser::Init() {
 	AddFormat("account rename", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
 
-	AddFormat("account transferfrom", {pAccountFrom, pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
+	AddFormat("account transfer-from", {pAccountFrom, pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountTransfer(D.V(1), D.V(2), stoi( D.V(3) ), D.v(4), D.has("--dryrun") ); } );
 
-	AddFormat("account transferto", {pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
+	AddFormat("account transfer-to", {pAccountTo, pAmount}, {pText}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountTransfer(U.AccountGetName(U.AccountGetDefault()), D.V(1), stoi( D.V(2) ), D.v(3), D.has("--dryrun") ); } );
 
 	//======== ot account-in ========
@@ -343,10 +343,10 @@ void cCmdParser::Init() {
 	AddFormat("msg ls", {}, {pNym}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.MsgDisplayForNym( D.v(1, U.NymGetName(U.NymGetDefault())), D.has("--dryrun") ); } );
 
-	AddFormat("msg sendfrom", {pFrom, pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
+	AddFormat("msg send-from", {pFrom, pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
 		LAMBDA { auto &D=*d; return U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
 
-	AddFormat("msg sendto", {pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
+	AddFormat("msg send-to", {pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
 		LAMBDA { auto &D=*d; return U.MsgSend(U.NymGetName(U.NymGetDefault()), D.V(1) + D.o("--cc"), D.v(2,"nosubject"), D.v(3), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
 
 	AddFormat("msg rm", {pNym, pOnceInt}, {}, { {"--dryrun", pBool} /*{"--all", pBool}*/ }, // FIXME proper handle option without parameter!
@@ -420,9 +420,9 @@ void cCmdParser::Init() {
 	
 //	mI->tree[ cCmdName("msg send") ] = msg_send_format;
 
-	// msg sendfrom bob alice
-	// msg sendfrom bob alice HelloThisIsATest // TODO, other call to OTUse, just pass the message
-	// msg sendfrom bob alice "Hello This Is A Test" // TODO, need parser+editline support for quotes
+	// msg send-from bob alice
+	// msg send-from bob alice HelloThisIsATest // TODO, other call to OTUse, just pass the message
+	// msg send-from bob alice "Hello This Is A Test" // TODO, need parser+editline support for quotes
 
 /*	mI->tree[ cCmdName("msg send") ] = cCmdFormat( 
 			vector<cParamInfo>{ ARG_STR, ARG_STR, ARG_STR }, map<string,cParamInfo>{{"subject",ARG_STR}}, map<string,cParamInfo>{{"cc",ARG_STR}} ,
@@ -596,7 +596,7 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 
 	if (mCommandLine.at(0) != "ot") _warn("Command for processing is mallformed");
 	mCommandLine.erase( mCommandLine.begin() ); // delete the first "ot" ***
-	// mCommandLine = msg, sendfrom, alice, bob, hello
+	// mCommandLine = msg, send-from, alice, bob, hello
 	_dbg1("Parsing (after erasing ot) : " << DbgVector(mCommandLine) );
 
 	if (mCommandLineString.empty()) { const string s="Command for processing was empty (besides prefix)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
@@ -768,7 +768,7 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 }
 
 //    0   1        2     3   4    5     word (as seend by Parse)
-// ot msg sendfrom alice bob --cc dave
+// ot msg send-from alice bob --cc dave
 // ----- name ---- arg=1 2   ---3----   any_argument
 //                    ^ pos=21          
 
@@ -1081,8 +1081,8 @@ void _cmd_test_completion( shared_ptr<cUseOT> use ) {
 //	,"ot msg send~ ali"
 //	,"ot msg send ali~"
 	,"ot msg sen~ alice bob"
-	,"ot msg sendfrom ali~ bo"
-	,"ot msg sendfrom ali bo~"
+	,"ot msg send-from ali~ bo"
+	,"ot msg send-from ali bo~"
 	,"ot help securi~"
 	,"help securi~"
 //	,"ot msg sendfrom ali bobxxxxx~"
@@ -1123,19 +1123,19 @@ void _cmd_test_tree( shared_ptr<cUseOT> use ) {
 	,"ot help"
 /*	,"ot msg ls --dryrun"
 	,"ot msg ls alice --dryrun"*/
-	,"ot msg sendfrom alice bob --prio 1 --dryrun"
-/*	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4 --dryrun"
-	,"ot msg sendfrom alice bob message subject --cc eve --cc mark --bcc john --prio 4 --dryrun"
-	,"ot msg sendto bob hello --cc eve --cc mark --bcc john --prio 4 --dryrun"
+	,"ot msg send-from alice bob --prio 1 --dryrun"
+/*	,"ot msg send-from alice bob --cc eve --cc mark --bcc john --prio 4 --dryrun"
+	,"ot msg send-from alice bob message subject --cc eve --cc mark --bcc john --prio 4 --dryrun"
+	,"ot msg send-to bob hello --cc eve --cc mark --bcc john --prio 4 --dryrun"
 	,"ot msg rm alice 0 --dryrun"
 	,"ot msg rm-out alice 0 --dryrun"
 	//ot msg
 //	"ot msg ls"
 //	,"ot msg ls alice"
-//	,"ot msg sendfrom alice bob --prio 1"
-//	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4"
-//	,"ot msg sendfrom alice bob --cc eve --cc mark --bcc john --prio 4"
-//	,"ot msg sendto bob hello --cc eve --cc mark --bcc john --prio 4"
+//	,"ot msg send-from alice bob --prio 1"
+//	,"ot msg send-from alice bob --cc eve --cc mark --bcc john --prio 4"
+//	,"ot msg send-from alice bob --cc eve --cc mark --bcc john --prio 4"
+//	,"ot msg send-to bob hello --cc eve --cc mark --bcc john --prio 4"
 //	,"ot msg rm alice 0"
 //	,"ot msg rm-out alice 0"
 
