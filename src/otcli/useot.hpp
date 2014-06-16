@@ -29,7 +29,7 @@ namespace nUse {
 		bool mNymsMy_loaded;
 		bool OTAPI_loaded;
 		bool OTAPI_error;
-		enum class eSubjectType {Account, Asset, User, Server};
+		enum class eSubjectType {Account, Asset, User, Server, Nym};
 
 	private:
 

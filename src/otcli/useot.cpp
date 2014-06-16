@@ -57,10 +57,12 @@ void cUseOT::LoadDefaults() {
 		ID userID = OTAPI_Wrap::GetNym_ID(0);
 		ID serverID = OTAPI_Wrap::GetServer_ID(0);
 
+		/*  (屮ﾟДﾟ)屮 compilation error
 		mDefaultIDs.insert(std::pair(eSubjectType::Account, accountID));
 		mDefaultIDs.insert(std::pair(eSubjectType::Asset, assetID));
 		mDefaultIDs.insert(std::pair(eSubjectType::User, userID));
 		mDefaultIDs.insert(std::pair(eSubjectType::Server, serverID));
+		*/
 	}
 }
 
