@@ -32,6 +32,7 @@ class cCmdParser_pimpl;
 // ============================================================================
 
 struct cErrParse : public std::runtime_error { cErrParse(const string &s) : runtime_error(s) { } };
+struct cErrAfterparse : public std::runtime_error { cErrAfterparse(const string &s) : runtime_error("problem in later parsing/using:" + s) { } };
 struct cErrParseName : public cErrParse { cErrParseName(const string &s) : cErrParse("name of command is unknown: "+s) { } };
 struct cErrParseSyntax : public cErrParse { cErrParseSyntax(const string &s) : cErrParse("syntax error: "+s) { } };
 
@@ -83,6 +84,7 @@ class cCmdParser : public enable_shared_from_this<cCmdParser> { MAKE_CLASS_NAME(
 		cCmdProcessing StartProcessing(const string &words, shared_ptr<nUse::cUseOT> use );
 
 		shared_ptr<cCmdFormat> FindFormat( const cCmdName &name ) throw(cErrParseName);
+		bool FindFormatExists( const cCmdName &name ) throw();
 
 		void Init();
 		void Test();
@@ -96,8 +98,10 @@ E.g. parsing the input "msg sendfrom rafal dorota 5000" and pointing to standard
 */
 class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLASS_NAME("cCmdProcessing");
 	protected:
-		enum class tState { never=0, failed, succeeded  } ;
+		enum class tState { never=0, failed, succeeded, succeeded_partial  } ;
 		tState mStateParse, mStateValidate, mStateExecute;
+
+		bool mFailedAfterBadCmdname; // did we given up in parsing after seeig bad cmd name (usefull for completion)
 
 		shared_ptr<cCmdParser> mParser; // our "parent" parser to use here
 
@@ -109,7 +113,7 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 
 		shared_ptr<nUse::cUseOT> mUse; // this will be used e.g. in Parse() - passed to called validations, in UseExecute and UseComplete etc
 
-		virtual void _Parse(); // throw if failed
+		virtual void _Parse(bool allowBadCmdname ); // throw if failed;  allowBadCmdname - will exit early if cmdname is not complete (to use from completion of cmdname)
 		virtual void _Validate(); // throw if failed
 		virtual void _UseExecute(); // throw if failed
 
@@ -117,7 +121,7 @@ class cCmdProcessing : public enable_shared_from_this<cCmdProcessing> { MAKE_CLA
 		cCmdProcessing(shared_ptr<cCmdParser> parser, const string &commandLineString, shared_ptr<nUse::cUseOT> use );
 		virtual ~cCmdProcessing();
 
-		virtual void Parse(); // parse into mData, mFormat
+		virtual void Parse(bool allowBadCmdname=false); // parse into mData, mFormat
 		virtual void Validate(); // detects validation errors; Might report the error (or maybe throw or save status in *this, depending on this->mUse settings)
 		virtual void UseExecute(); // execute the command
 
@@ -238,10 +242,14 @@ class cCmdDataParse : public cCmdData { MAKE_CLASS_NAME("cCmdDataParse");
 		string mOrginalCommand; // full orginal command as given e.g. by the user, "ot msg     send   bob    'alice' title"
 		vector<int> mWordIx2CharIx; // mWordIx2CharIx[3] = 20, means that 4th word starts at character position 20 in the orginal command string
 
+		int mFirstArgAfterWord; // at which word we have first param. Usually after 3 words (ot msg send ...) but could be e.g. 2 ("ot help" ...)
+		int mCharShift; // *deprecated?* how many characters should we shift to get back to orginal string becuse auto-prepending like "help"->"ot help" (-3), or 0 often
+
 	public:
+		cCmdDataParse();
 
-		int CharIx2WordIx(int char_ix) const;
-
+		int CharIx2WordIx(int char_ix) const; // eg #15 char = word #4
+		int WordIx2ArgNr(int word_ix) const; // eg word #4 = argument #1 like in "ot msg ls alice" alice is 4th word == 1 argument
 };
 
 // ============================================================================

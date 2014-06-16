@@ -201,9 +201,9 @@ std::string DbgMap(const map<T, T2> & map) {
 
 // ASRT - assert. Name like ASSERT() was too long, and ASS() was just... no.
 // Use it like this: ASRT( x>y );  with the semicolon at end, a clever trick forces this syntax :)
-#define ASRT(x) do { if (!(x)) Assert(false, OT_CODE_STAMP); } while(0)
+#define ASRT(x) do { if (!(x)) Assert(false, OT_CODE_STAMP, #x); } while(0)
 
-void Assert(bool result, const std::string &stamp);
+void Assert(bool result, const std::string &stamp, const std::string &condition);
 
 // ====================================================================
 // advanced string

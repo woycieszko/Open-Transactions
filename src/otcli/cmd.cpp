@@ -454,6 +454,15 @@ shared_ptr<cCmdFormat> cCmdParser::FindFormat( const cCmdName &name )
 	return it->second;
 }
 
+bool cCmdParser::FindFormatExists( const cCmdName &name ) throw()
+{
+	try {
+		FindFormat(name);
+		return true;
+	} catch(cErrParseName &e) { }
+	return false;
+}
+
 // ========================================================================================================================
 
 cCmdName::cCmdName(const string &name) : mName(name) { }
@@ -467,6 +476,7 @@ cCmdName::operator std::string() const { return mName; }
 cCmdProcessing::cCmdProcessing(shared_ptr<cCmdParser> parser, const string &commandLineString, shared_ptr<nUse::cUseOT> use )
 : 
 mStateParse(tState::never), mStateValidate(tState::never), mStateExecute(tState::never),
+mFailedAfterBadCmdname(false),
 mParser(parser), mCommandLineString(commandLineString), mUse(use)
 { 
 	mCommandLine = vector<string>{}; // will be set in Parse()
@@ -509,37 +519,45 @@ void cCmdProcessing::_Validate() {
 	}
 }
 
-void cCmdProcessing::Parse() {
+void cCmdProcessing::Parse(bool allowBadCmdname) {
+	_dbg1("Entering Parse()");
 	if (mStateParse != tState::never) { _dbg1("Already parsed"); return; }
 	mStateParse = tState::failed; // assumed untill succeed below
 	try {
-		_Parse();
-		mStateParse = tState::succeeded;
-	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
+		_Parse(allowBadCmdname);
+		if (mFailedAfterBadCmdname) { _info("Parsed partially"); mStateParse = tState::succeeded_partial; }
+		else { _info("Parsed ok (fully ok)"); mStateParse = tState::succeeded; }
+	} 
+	catch (const myexception &e) { e.Report(); throw ; } 
+	catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
 }
 
-void cCmdProcessing::_Parse() {
+void cCmdProcessing::_Parse(bool allowBadCmdname) {
 	// int _dbg_ignore=50;
-	bool test_char2word = true; // run a detailed test on char to word conversion
-
-	if (mCommandLineString.empty()) { const string s="Command for processing was empty (string)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
+	bool test_char2word = false; // run a detailed test on char to word conversion
 
 	mData = std::make_shared<cCmdDataParse>();
 	mData->mOrginalCommand = mCommandLineString;
 
+	int namepart_words = 0; // how many words are in name SINCE BEGINING (including ot), "ot msg send"=3, "ot help"=2", "ot"=1 
+	if (mCommandLineString.empty()) { const string s="Command for processing was empty (string)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
+
 	{
 		// char processing (remove double-space, parse quotations etc)
 		// TODO: quotation "..."
+		//            |  help
+		//            |ot   help
 		//     string |ot  msg  ls  bob  --all  --color red  --reload  --color blue
 		// char_pos   |012345678901234567890123456789012345678901234567890123456789
 		// word_ix    |0   1    2   3    4      5       6     7        8
-		// any_arg    |         1   2    3      4             5        6
+		// any_arg    |             1    2      3            4         5        6
+		// 
 		// cmd name        "msg ls"
 		// Opt("--color")                              red,                    blue
 		// Opt("--reload")                                    ""
 		// Arg(1)                   bob
 		// vector     =ot,msg,ls 
-		// mWordIx2CharIx [0]=>2, [1]=>6, [2]=>11
+		// mWordIx2CharIx [0]=2, [1]=6, [2]=11 (or so)
 		string curr_word="";
 		size_t curr_word_pos=0; // at which pos that current word had started
 		for (size_t pos=0; pos<mCommandLineString.size(); ++pos) { // each character
@@ -573,7 +591,9 @@ void cCmdProcessing::_Parse() {
 	if (mCommandLine.empty()) { const string s="Command for processing was empty (had no words)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
 
 	// -----------------------------------
-	if (mCommandLine.at(0) == "help") mCommandLine.insert( mCommandLine.begin() , "ot"); // change "help" to "ot help"
+	if (mCommandLine.at(0) == "help") { mData->mCharShift=-3; namepart_words--;  mCommandLine.insert( mCommandLine.begin() , "ot"); } // change "help" to "ot help"
+	// ^--- namepart_words-- because we here inject the word "ot" and it will make word-position calculation off by one
+
 	if (mCommandLine.at(0) != "ot") _warn("Command for processing is mallformed");
 	mCommandLine.erase( mCommandLine.begin() ); // delete the first "ot" ***
 	// mCommandLine = msg, sendfrom, alice, bob, hello
@@ -581,13 +601,37 @@ void cCmdProcessing::_Parse() {
 
 	if (mCommandLineString.empty()) { const string s="Command for processing was empty (besides prefix)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
 
+
+	_mark(" shift : " << mData->mCharShift );
+
 	int phase=0; // 0: cmd name  1:var, 2:varExt  3:opt   9:end
 	try {
-		const string name = mCommandLine.at(0) 
-			+ (   (mCommandLine.size()<=1)  ?  "" : (" " + mCommandLine.at(1))   ); // this is second-word plus space, or nothing
+		string name_tmp = mCommandLine.at(0); // buld the name of command, start with 1st word like "msg" or "help"
+
+		if (!	mParser->FindFormatExists(name_tmp)) { // if NOT one-word command like "help", then:
+			if (mCommandLine.size()>=1) {  // take 2nd word as part of the name
+				namepart_words++;
+				name_tmp += " " + mCommandLine.at(1);
+			}
+		}
+		const string name = name_tmp;
+		_mark("command name = " << name);
+
 		// "msg send" or "help"
+		namepart_words++;
 		_dbg3("Name of command is: " << name);
-		mFormat = mParser->FindFormat( name );
+		_dbg3("namepart_words="<<namepart_words);
+		mData->mFirstArgAfterWord = namepart_words;
+		
+		try {
+			mFormat = mParser->FindFormat( name ); // <--- 
+		} 
+		catch(cErrParseName &e) {
+			if (allowBadCmdname) { 
+				mFailedAfterBadCmdname=true;  return;  // <=== RETURN.  exit, but report that we given up early
+			}
+			else { throw ; } // else just panic - throw
+		}
 		_info("Got format for name="<<name);
 
 		// msg send
@@ -729,13 +773,20 @@ void cCmdProcessing::_Parse() {
 //                    ^ pos=21          
 
 vector<string> cCmdProcessing::UseComplete(int char_pos) {
-	if (mStateParse != tState::succeeded) Parse();
-	// if (mStateValidate != tState::succeeded) Validate();
-	if (mStateParse != tState::succeeded) { _dbg1("Failed to parse."); }
-	//if (mStateValidate != tState::succeeded) { _dbg1("Failed to validate."); }
+	if (mStateParse == tState::never) Parse( true );
+	if (mStateParse != tState::succeeded) { 
+		if (mStateParse == tState::succeeded_partial) _dbg3("Failed to fully parse.");  // can be ok - maybe we want to comlete cmd name like "ot msg sendfr~"
+		else _dbg1("Failed to parse (even partially)");
+	}
+	ASRT(nullptr != mData);
 
 	try {
-		_mark("Completion at pos="<<char_pos);
+		int word = mData->CharIx2WordIx( char_pos  );
+		_dbg1("word=" << word);
+		int arg_nr = mData->WordIx2ArgNr( word );
+		_dbg1(arg_nr);
+		shared_ptr<cCmdFormat> FindFormat( const cCmdName &name ) throw(cErrParseName);
+		_mark("Completion at pos="<<char_pos<<" word="<<word<<" arg_nr="<<arg_nr);
 		vector<string> ret;
 		return ret;
 	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
@@ -973,10 +1024,26 @@ void cCmdData::AddOpt(const string &name, const string &value) throw(cErrArgIlle
 
 // ========================================================================================================================
 
+cCmdDataParse::cCmdDataParse()
+	: mFirstArgAfterWord(0), mCharShift(0)
+{ 
+}
+
+
 int cCmdDataParse::CharIx2WordIx(int char_ix) const {
 	int word_ix = RangesFindPosition( mWordIx2CharIx , char_ix );
-	ASERT(  (word_ix >= 0) ); 
+	ASRT(  (word_ix >= 0) ); 
 	// TODO assert versus number of known words?
+	return word_ix;
+}
+
+int cCmdDataParse::WordIx2ArgNr(int word_ix) const {
+	if (word_ix<0) throw cErrAfterparse("Trying to use word_ix="+ToStr(word_ix));
+	int arg_nr = word_ix - mFirstArgAfterWord;
+	_dbg3("mFirstArgAfterWord="<<mFirstArgAfterWord);
+	if (arg_nr < 0) arg_nr=0; // arg number 0 will mean "part of the name"
+	// ASRT(arg_nr >=0 );
+	return arg_nr;
 }
 
 // ========================================================================================================================
@@ -992,13 +1059,17 @@ void _cmd_test_completion( shared_ptr<cUseOT> use ) {
 	parser->Init();
 
 	auto alltest = vector<string>{ ""
-	,"~"
-	,"ot~"
-	,"ot msg send~ ali"
-	,"ot msg send ali~"
+//	,"~"
+//	,"ot~"
+//	,"ot msg send~ ali"
+//	,"ot msg send ali~"
+	,"ot msg sen~ alice bob"
 	,"ot msg sendfrom ali~ bo"
-	,"ot msg sendfrom ali bobxxxxx~"
-	,"ot msg sendfrom ali       bob      subject message_hello --cc charlie --cc dave --prio 4 --cc eve --dry~ --cc xray"
+	,"ot msg sendfrom ali bo~"
+	,"ot help securi~"
+	,"help securi~"
+//	,"ot msg sendfrom ali bobxxxxx~"
+//	,"ot msg sendfrom ali       bob      subject message_hello --cc charlie --cc dave --prio 4 --cc eve --dry~ --cc xray"
 	};
 	for (const auto cmd_raw : alltest) {
 		try {

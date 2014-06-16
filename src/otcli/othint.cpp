@@ -936,7 +936,7 @@ static char* CompletionReadlineWrapper(const char *sofar , int number) {
 
 	bool dbg = my_rl_wrapper_debug;
 	dbg=true;
-	Assert( !(gReadlineHandleParser == nullptr), "gReadlineHandleParser must be set before calling this function");
+	ASRT( !(gReadlineHandleParser == nullptr) ); // gReadlineHandleParser must be set before calling this function
 	if (dbg||1) _mark("sofar="<<sofar<<" number="<<number<<" rl_line_buffer="<<rl_line_buffer<<endl);
 
 	string line_all;
