@@ -23,10 +23,10 @@ cUseOT::cUseOT(const string &mDbgName)
 {
 	_dbg1("Creating cUseOT "<<DbgName());
 	FPTR fptr;
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Account, fptr = &cUseOT::AccountGetId) );
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Asset, fptr = &cUseOT::AssetGetId) );
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Nym, fptr = &cUseOT::NymGetId) );
-	subjectGetIDFunc.insert(std::make_pair(subjectType::Server, fptr = &cUseOT::ServerGetId) );
+	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Account, fptr = &cUseOT::AccountGetId) );
+	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Asset, fptr = &cUseOT::AssetGetId) );
+	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Nym, fptr = &cUseOT::NymGetId) );
+	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Server, fptr = &cUseOT::ServerGetId) );
 }
 
 
@@ -52,10 +52,21 @@ void cUseOT::LoadDefaults() {
 	if ( !configManager.Load(mDefaultIDsFile, mDefaultIDs) ) {
 		_dbg1("Cannot open" + mDefaultIDsFile + " file, setting IDs with ID 0 as default");
 		mDefaultIDs["AccountID"] = OTAPI_Wrap::GetAccountWallet_ID(0);
-		mDefaultIDs["PurseID"] = OTAPI_Wrap::GetAssetType_ID(0);
-		mDefaultIDs["ServerID"] = OTAPI_Wrap::GetServer_ID(0);
-		mDefaultIDs["UserID"] = OTAPI_Wrap::GetNym_ID(0);
+		ID accountID = OTAPI_Wrap::GetAccountWallet_ID(0);
+		ID assetID = OTAPI_Wrap::GetAssetType_ID(0);
+		ID userID = OTAPI_Wrap::GetNym_ID(0);
+		ID serverID = OTAPI_Wrap::GetServer_ID(0);
+
+		mDefaultIDs.insert(std::pair(eSubjectType::Account, accountID));
+		mDefaultIDs.insert(std::pair(eSubjectType::Asset, assetID));
+		mDefaultIDs.insert(std::pair(eSubjectType::User, userID));
+		mDefaultIDs.insert(std::pair(eSubjectType::Server, serverID));
 	}
+}
+
+const string cUseOT::GetDefaultID(const string & type) {
+	if(!Init()) return "";
+	return mDefaultIDs.at(type);
 }
 
 bool cUseOT::Init() { // TODO init on the beginning of application execution
@@ -94,7 +105,7 @@ bool cUseOT::Init() { // TODO init on the beginning of application execution
 	return OTAPI_loaded;
 }
 
-bool cUseOT::CheckIfExists(subjectType type, const string & subject) {
+bool cUseOT::CheckIfExists(eSubjectType type, const string & subject) {
 	if(!Init()) return false;
 
 	ID subjectID = (this->*cUseOT::subjectGetIDFunc.at(type))(subject);

@@ -80,7 +80,7 @@ void cCmdParser::Init() {
 	cParamInfo pNym( "nym", "nym existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym validation");
-			return use.CheckIfExists(cUseOT::subjectType::Nym, data.Var(curr_word_ix + 1));
+			return use.CheckIfExists(cUseOT::eSubjectType::User, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Nym hinting");
@@ -91,7 +91,7 @@ void cCmdParser::Init() {
 	cParamInfo pNymMy( "nym-my", "one of my own nyms",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Nym validation");
-				return use.CheckIfExists(cUseOT::subjectType::Nym, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::eSubjectType::User, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Nym hinting");
@@ -117,7 +117,7 @@ void cCmdParser::Init() {
 	cParamInfo pAccount( "account", "account existing on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Account validation");
-				return use.CheckIfExists(cUseOT::subjectType::Account, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::eSubjectType::Account, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Account hinting");
@@ -128,7 +128,7 @@ void cCmdParser::Init() {
 	cParamInfo pAccountMy( "account", "on of my accounts",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Account validation");
-				return use.CheckIfExists(cUseOT::subjectType::Account, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::eSubjectType::Account, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Account hinting");
@@ -153,7 +153,7 @@ void cCmdParser::Init() {
 	cParamInfo pAsset( "asset", "asset that exists on a server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Asset validation");
-				return use.CheckIfExists(cUseOT::subjectType::Asset, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::eSubjectType::Asset, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Asset hinting");
@@ -164,7 +164,7 @@ void cCmdParser::Init() {
 	cParamInfo pServer( "server", "identifier of existing server",
 		[] (cUseOT & use, cCmdData & data, size_t curr_word_ix ) -> bool {
 			_dbg3("Server validation");
-				return use.CheckIfExists(cUseOT::subjectType::Server, data.Var(curr_word_ix + 1));
+				return use.CheckIfExists(cUseOT::eSubjectType::Server, data.Var(curr_word_ix + 1));
 		} ,
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			_dbg3("Server hinting");
@@ -289,6 +289,9 @@ void cCmdParser::Init() {
 
 	//======== ot account ========
 
+	AddFormat("account", {}, {}, { {"--dryrun", pBool} },
+		LAMBDA { auto &D=*d; return true /*U.( D.has("--dryrun") )*/; } ); //TODO
+
 	AddFormat("account new", {pAsset, pAccountNewName}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountCreate( D.V(1), D.V(2), D.has("--dryrun") ); } );
 
@@ -305,7 +308,7 @@ void cCmdParser::Init() {
 		LAMBDA { auto &D=*d; return U.AccountDisplayAll( D.has("--dryrun") ); } );
 
 	AddFormat("account show", {pAccount}, {}, { {"--dryrun", pBool} },
-			LAMBDA { auto &D=*d; return U.AccountDisplay( D.V(1), D.has("--dryrun") ); } );
+		LAMBDA { auto &D=*d; return U.AccountDisplay( D.V(1), D.has("--dryrun") ); } );
 
 	AddFormat("account rename", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
