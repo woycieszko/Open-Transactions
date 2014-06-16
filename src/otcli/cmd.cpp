@@ -785,8 +785,25 @@ vector<string> cCmdProcessing::UseComplete(int char_pos) {
 		_dbg1("word=" << word);
 		int arg_nr = mData->WordIx2ArgNr( word );
 		_dbg1(arg_nr);
-		shared_ptr<cCmdFormat> FindFormat( const cCmdName &name ) throw(cErrParseName);
 		_mark("Completion at pos="<<char_pos<<" word="<<word<<" arg_nr="<<arg_nr);
+
+
+		if (arg_nr > 0) { // we are really inside some argument (not in the cmdname part)
+			shared_ptr<cCmdFormat> format = mFormat;  // info about command "msg sendfrom"  
+			ASRT( format );						
+			cParamInfo param_info = format->GetParamInfo( arg_nr ); // eg. pNymFrom  <--- info about kind (completion function etc) of argument that we now are tab-completing
+			vector<string> completions = param_info.GetFuncHint()  ( *mUse , *mData , arg_nr );
+			_fact("Completions: " << DbgVector(completions));
+
+			// TODO just vars yet, not options!
+
+			vector<string> matching = WordsThatMatch( mData->V( arg_nr ) ,  completions );
+			return matching;
+		} else {
+			_warn("TODO: write completion for command names here");
+		}
+
+		_erro("DEAD CODE");
 		vector<string> ret;
 		return ret;
 	} catch (const myexception &e) { e.Report(); throw ; } catch (const std::exception &e) { _erro("Exception " << e.what()); throw ; }
