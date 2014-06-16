@@ -378,36 +378,35 @@ int RangesFindPosition(const vector<int> &R, int pos) {
 	int left =0;
 	int right=R.size()-1;
 
-	while(left<=right){
+	while(left<=right) {
 		int middle=(left+right)/2;
-		int x=R[middle];
-		if(pos>R[right]){
-		return right;
-	}
+		int x=R.at(middle);
+		if(pos>R.at(right)) {
+			return right;
+			}
 		
-	else if(pos==x){
+		else if(pos==x) {
 			return middle;
-		}
-		else if(pos<=R[left]){
+			}
+		else if(pos<=R.at(left)) {
 			return left;
-	}
-	else	if( pos>x){
-			if(pos<R[middle+1])
-			{
+			}
+		else if( pos>x){
+			if(pos<R.at(middle+1)) {
 				find=middle;
 				return find;
 			}
 			else left=middle+1;			
 			}
 		else if(pos<x){
-			if(pos>R[middle-1]){
+			if(pos>R.at(middle-1)) {
 				find=middle-1;
 				return find;
 			}
 			else right=middle+1;
-		}
+			}
 
-}
+}	// end while
 	return find;
 }
 
