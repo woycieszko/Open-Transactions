@@ -71,7 +71,8 @@ namespace nUse {
 		HINT const vector<string> AccountGetAllNames();
 
 		EXEC bool AccountCreate(const string & assetName, const string & newAccountName, bool dryrun);
-		EXEC bool AccountDisplayAllNames(bool dryrun);
+		EXEC bool AccountDisplay(const string & account, bool dryrun);
+		EXEC bool AccountDisplayAll(bool dryrun);
 		EXEC bool AccountRefresh(const string & accountName, bool all, bool dryrun);
 		EXEC bool AccountRemove(const string & account, bool dryrun) ;
 		EXEC bool AccountRename(const string & account, const string & newAccountName, bool dryrun);
@@ -81,6 +82,7 @@ namespace nUse {
 		//================= account-in =================
 
 		EXEC bool AccountInDisplay(const string & account, bool dryrun);
+		EXEC bool AccountInAccept(const string & account, bool dryrun);
 
 		//================= asset =================
 
@@ -92,7 +94,7 @@ namespace nUse {
 
 		HINT const vector<string> AssetGetAllNames();
 
-		EXEC bool AssetDisplayAllNames(bool dryrun);
+		EXEC bool AssetDisplayAll(bool dryrun);
 		EXEC bool AssetIssue(const string & serverID, const string & nymID, bool dryrun) ;
 		EXEC bool AssetNew(const string & nym, bool dryrun);
 		EXEC bool AssetRemove(const string & asset, bool dryrun);
@@ -110,7 +112,7 @@ namespace nUse {
 		VALID bool MsgOutCheckIndex(const string & nymName, const int32_t & nIndex);
 
 		EXEC bool MsgDisplayForNym(const string & nymName, bool dryrun);
-		EXEC bool MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun);
+		EXEC bool MsgSend(const string & nymSender, vector<string> nymRecipient, const string & subject, const string & msg, int prio, bool dryrun);
 		EXEC bool MsgInRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
 		EXEC bool MsgOutRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
 
@@ -127,7 +129,7 @@ namespace nUse {
 
 		EXEC bool NymCheck(const string & nymName, bool dryrun);
 		EXEC bool NymCreate(const string & nymName, bool dryrun);
-		EXEC bool NymDisplayAllNames(bool dryrun);
+		EXEC bool NymDisplayAll(bool dryrun);
 		EXEC bool NymDisplayInfo(const string & nymName, bool dryrun);
 		EXEC bool NymRefresh(const string & nymName, bool all, bool dryrun);
 		EXEC bool NymRegister(const string & nymName, const string & serverName, bool dryrun);
@@ -138,9 +140,9 @@ namespace nUse {
 		//================= server =================
 
 		void ServerCheck(); ///< Check server availability (ping server)
-		const string ServerGetDefault();
+		const ID ServerGetDefault(); ///< Gets ID of default server
 		const ID ServerGetId(const string & server); ///< Gets server ID both from name and ID with prefix
-		const string ServerGetName(const string & serverID);
+		const string ServerGetName(const string & serverID); ///< Gets Name of default server
 
 		HINT const vector<string> ServerGetAllNames();
 
@@ -148,7 +150,7 @@ namespace nUse {
 		EXEC bool ServerCreate(const string & nymName, bool dryrun); ///< Create new server contract
 		EXEC bool ServerRemove(const string & serverName, bool dryrun);
 		EXEC bool ServerSetDefault(const string & serverName, bool dryrun);
-		EXEC bool ServerDisplayAllNames(bool dryrun);
+		EXEC bool ServerDisplayAll(bool dryrun);
 
 		//================= text =================
 

@@ -302,7 +302,10 @@ void cCmdParser::Init() {
 		LAMBDA { auto &D=*d; return U.AccountRemove( D.V(1), D.has("--dryrun") ); } );
 
 	AddFormat("account ls", {}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AccountDisplayAllNames( D.has("--dryrun") ); } );
+		LAMBDA { auto &D=*d; return U.AccountDisplayAll( D.has("--dryrun") ); } );
+
+	AddFormat("account show", {pAccount}, {}, { {"--dryrun", pBool} },
+			LAMBDA { auto &D=*d; return U.AccountDisplay( D.V(1), D.has("--dryrun") ); } );
 
 	AddFormat("account rename", {pAccount, pAccountNewName}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AccountRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
@@ -321,7 +324,7 @@ void cCmdParser::Init() {
 	//======== ot asset ========
 
 	AddFormat("asset ls", {}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.AssetDisplayAllNames( D.has("--dryrun") ); } );
+		LAMBDA { auto &D=*d; return U.AssetDisplayAll( D.has("--dryrun") ); } );
 
 	AddFormat("asset issue", {}, {pServer, pNym}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.AssetIssue(	D.v(1, U.ServerGetName( U.ServerGetDefault())),
@@ -340,11 +343,11 @@ void cCmdParser::Init() {
 	AddFormat("msg ls", {}, {pNym}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.MsgDisplayForNym( D.v(1, U.NymGetName(U.NymGetDefault())), D.has("--dryrun") ); } );
 
-	AddFormat("msg sendfrom", {pFrom, pTo}, {pMsg, pSubj}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
+	AddFormat("msg sendfrom", {pFrom, pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
 		LAMBDA { auto &D=*d; return U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
 
-	AddFormat("msg sendto", {pTo}, {pMsg, pSubj}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
-		LAMBDA { auto &D=*d; return U.MsgSend(U.NymGetName(U.NymGetDefault()), D.V(1) + D.o("--cc"), D.v(2), D.v(3,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
+	AddFormat("msg sendto", {pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
+		LAMBDA { auto &D=*d; return U.MsgSend(U.NymGetName(U.NymGetDefault()), D.V(1) + D.o("--cc"), D.v(2,"nosubject"), D.v(3), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
 
 	AddFormat("msg rm", {pNym, pOnceInt}, {}, { {"--dryrun", pBool} /*{"--all", pBool}*/ }, // FIXME proper handle option without parameter!
 		LAMBDA { auto &D=*d; return U.MsgInRemoveByIndex(D.V(1), stoi(D.V(2)), D.has("--dryrun"));} );
@@ -376,7 +379,7 @@ void cCmdParser::Init() {
 		LAMBDA { auto &D=*d; return U.NymRefresh( D.v(1, U.NymGetName( U.NymGetDefault() ) ), D.has("--all"), D.has("--dryrun") ); } );
 
 	AddFormat("nym ls", {}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.NymDisplayAllNames( D.has("--dryrun") ); } );
+		LAMBDA { auto &D=*d; return U.NymDisplayAll( D.has("--dryrun") ); } );
 
 	AddFormat("nym rename", {pNymMy, pNymNewName}, {}, { {"--dryrun", pBool} },
 			LAMBDA { auto &D=*d; return U.NymRename(D.V(1), D.V(2), D.has("--dryrun") ); } );
@@ -385,7 +388,7 @@ void cCmdParser::Init() {
 	//======== ot server ========
 
 	AddFormat("server ls", {}, {}, { {"--dryrun", pBool} },
-		LAMBDA { auto &D=*d; return U.ServerDisplayAllNames(D.has("--dryrun") ); } );
+		LAMBDA { auto &D=*d; return U.ServerDisplayAll(D.has("--dryrun") ); } );
 
 	AddFormat("server add", {}, {}, { {"--dryrun", pBool} },
 		LAMBDA { auto &D=*d; return U.ServerAdd(D.has("--dryrun") ); } );

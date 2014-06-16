@@ -37,7 +37,7 @@ string cUseOT::DbgName() const noexcept {
 void cUseOT::CloseApi() {
 	if (OTAPI_loaded) {
 		_dbg1("Will cleanup OTAPI");
-		OTAPI_Wrap::AppCleanup(); // UnInit OTAPI
+		OTAPI_Wrap::AppCleanup(); // Close OTAPI
 		_dbg2("Will cleanup OTAPI - DONE");
 	} else _dbg3("Will cleanup OTAPI ... was already not loaded");
 }
@@ -58,17 +58,17 @@ void cUseOT::LoadDefaults() {
 	}
 }
 
-bool cUseOT::Init() {
+bool cUseOT::Init() { // TODO init on the beginning of application execution
 	if (OTAPI_error) return false;
 	if (OTAPI_loaded) return true;
 	try {
-		if (!OTAPI_Wrap::AppInit()) {// Init OTAPI
+		if (!OTAPI_Wrap::AppInit()) { // Init OTAPI
 			_erro("Error while initializing wrapper");
 			return false; // <--- RET
 		}
 
 		_info("Trying to load wallet now.");
-		// if not pWrap it means that AppInit is not successed
+		// if not pWrap it means that AppInit is not initialized
 		OTAPI_Exec *pWrap = OTAPI_Wrap::It(); // TODO check why OTAPI_Exec is needed
 		if (!pWrap) {
 			OTAPI_error = true;
@@ -120,8 +120,7 @@ const vector<ID> cUseOT::AccountGetAllIds() {
 }
 
 const int64_t cUseOT::AccountGetBalance(const string & accountName) {
-	if(!Init())
-		return 0; //FIXME
+	if(!Init()) return 0; //FIXME
 
 	int64_t balance = OTAPI_Wrap::GetAccountWallet_Balance ( AccountGetId(accountName) );
 	return balance;
@@ -292,15 +291,34 @@ const vector<string> cUseOT::AccountGetAllNames() {
 	return accounts;
 }
 
-bool cUseOT::AccountDisplayAllNames(bool dryrun) {
+bool cUseOT::AccountDisplay(const string & account, bool dryrun) {
+	_fact("account show account=" << account);
+	if(dryrun) return false;
+	if(!Init()) return false;
+
+	OT_ME madeEasy;
+
+	ID accountID = AccountGetId(account);
+	string stat = madeEasy.stat_asset_account(accountID);
+	if ( !stat.empty() ) {
+			nUtils::DisplayStringEndl(cout, stat);
+			return true;
+	}
+	_erro("Error trying to stat an account: " + accountID);
+	return false;
+}
+
+bool cUseOT::AccountDisplayAll(bool dryrun) {
 	_fact("account ls");
 	if(dryrun) return false;
 	if(!Init()) return false;
 
-	_dbg3("Retrieving all accounts names");
 	for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetAccountCount();i++) {
 		ID accountID = OTAPI_Wrap::GetAccountWallet_ID(i);
-		nUtils::DisplayStringEndl(cout, AccountGetName( accountID ) + " - " + accountID );
+		int64_t balance = OTAPI_Wrap::GetAccountWallet_Balance(accountID);
+		ID assetID = OTAPI_Wrap::GetAccountWallet_AssetTypeID(accountID);
+		string accountType = OTAPI_Wrap::GetAccountWallet_Type(accountID);
+		nUtils::DisplayStringEndl(cout, std::to_string(i) + "(" + accountType + ")" + " : " + AccountGetName(accountID) + "(" + accountID + ")" + " : " + AssetGetName(assetID) + "(" + assetID + ")" + " : " + std::to_string(balance) );
 	}
 	return true;
 }
@@ -427,13 +445,13 @@ const vector<string> cUseOT::AssetGetAllNames() {
 	return assets;
 }
 
-const string cUseOT::AssetGetName(const ID & accountID) {
+const string cUseOT::AssetGetName(const ID & assetID) {
 	if(!Init())
 		return "";
-	return OTAPI_Wrap::GetAccountWallet_Name(accountID);
+	return OTAPI_Wrap::GetAssetType_Name(assetID);
 }
 
-bool cUseOT::AssetDisplayAllNames(bool dryrun) {
+bool cUseOT::AssetDisplayAll(bool dryrun) {
 	_fact("asset ls");
 	if(dryrun) return false;
 	if(!Init()) return false;
@@ -566,7 +584,7 @@ bool cUseOT::MsgDisplayForNym(const string & nymName, bool dryrun) { ///< Get al
 	return true;
 }
 
-bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & msg, const string & subject, int prio, bool dryrun) {
+bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & subject, const string & msg, int prio, bool dryrun) {
 	_fact("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
 	if(dryrun) return false;
 	if(!Init()) return false;
@@ -743,7 +761,7 @@ const vector<string> cUseOT::NymGetAllNames() {
 	return names;
 }
 
-bool cUseOT::NymDisplayAllNames(bool dryrun) {
+bool cUseOT::NymDisplayAll(bool dryrun) {
 	_fact("nym ls ");
 	if(dryrun) return false;
 	if(!Init()) return false;
@@ -956,8 +974,7 @@ bool cUseOT::ServerCreate(const string & nymName, bool dryrun) {
 }
 
 void cUseOT::ServerCheck() {
-	if(!Init())
-			return ;
+	if(!Init()) return;
 
 	if( !OTAPI_Wrap::checkServerID( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID") ) ) {
 		_erro( "No response from server: " + mDefaultIDs.at("ServerID") );
@@ -1032,7 +1049,7 @@ const vector<string> cUseOT::ServerGetAllNames() { ///< Gets all servers name
 	return servers;
 }
 
-bool cUseOT::ServerDisplayAllNames(bool dryrun) {
+bool cUseOT::ServerDisplayAll(bool dryrun) {
 	_fact("server ls");
 	if(dryrun) return false;
 	if(!Init()) return false;
