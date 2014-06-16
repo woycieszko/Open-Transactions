@@ -554,9 +554,9 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 		//            |ot   help
 		//     string |ot  msg  ls  bob  --all  --color red  --reload  --color blue
 		// char_pos   |012345678901234567890123456789012345678901234567890123456789
-		// word_ix    |0   1    2   3    4      5       6     7        8
+		// word_ix    |0   1    2   3    4      5       6     7        8       9
 		// any_arg    |             1    2      3            4         5        6
-		// 
+		// char2ent   |p,0 n,0 n,1  v,1  on,w=4 on,w=5 ov,w=6 on,w=7    on,w=8  ov,w=9  see details in cParseEntity;
 		// cmd name        "msg ls"
 		// Opt("--color")                              red,                    blue
 		// Opt("--reload")                                    ""
@@ -570,7 +570,7 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 			if (c==' ') { // white char
 				if (curr_word.size()) {  // if there was a previous word
 					mCommandLine.push_back(curr_word);
-					mData->mWordIx2CharIx.push_back(curr_word_pos);
+					mData->mWordIxEntity.push_back( cParseEntity( curr_word_pos);
 					curr_word="";
 				}
 			}

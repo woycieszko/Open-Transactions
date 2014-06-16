@@ -15,6 +15,8 @@ namespace nNewcli {
 
 INJECT_OT_COMMON_USING_NAMESPACE_COMMON_1; // <=== namespaces
 
+class cParseEntity;
+
 class cCmdParser;
 class cCmdProcessing;
 class cCmdFormat;
@@ -41,6 +43,37 @@ struct cErrArgMissing : public cErrArgNotFound {
 	cErrArgMissing(const string &s) : cErrArgNotFound("Just missing : " + s) { } }; // more specificaly, the arg was not given, e.g. 3 out of 2
 struct cErrArgIllegal : public cErrArgNotFound { 
 	cErrArgIllegal(const string &s) : cErrArgNotFound("Illegal! : " + s) { } }; // more specificaly, such arg is illegal, e.g. number -1 or option name ""
+
+
+// ============================================================================
+
+class cParseEntity {
+	public:
+		// int mWordNr; // then number of word (in command line)  (this is part of the array index)
+
+		int mCharPos; // at which character does this word start in command line (e.g. in orginal command)
+
+		int mSub; // additional number
+	
+		enum class tKind { 
+			pre, // "ot", mWordNr is 0 usually
+			cmdname, // "msg" or "sendfrom", mWordNr=1,2,3,... usually; mSub=0,1 number of part of command name
+			variable, // positional argument; mSub == arg_nr (numbered from 1)
+			option_name, // an option, the name part; mSub is the occurance of the option, e.g. mSub==3 for 4th use of --x in "--x --x --x --x"
+			option_value // an option, the value part; mSub is same as for corresponding option_name  --color red  --color green 
+		};
+
+		tKind mKind;
+
+		cParseEntity(tKind kind, int mCharPos, int mSub=0);
+
+		// usefull for RangesFindPosition:
+		bool operator<(const cParseEntity & other) const { return mCharPos < other.mCharPos; }
+		bool operator>(const cParseEntity & other) const { return mCharPos > other.mCharPos; }
+		bool operator<=(const cParseEntity & other) const { return mCharPos <= other.mCharPos; }
+		bool operator>=(const cParseEntity & other) const { return mCharPos >= other.mCharPos; }
+		operator int() const { return mCharPos; } 
+};
 
 // ============================================================================
 
@@ -240,7 +273,7 @@ class cCmdDataParse : public cCmdData { MAKE_CLASS_NAME("cCmdDataParse");
 		friend class cCmdProcessing;
 
 		string mOrginalCommand; // full orginal command as given e.g. by the user, "ot msg     send   bob    'alice' title"
-		vector<int> mWordIx2CharIx; // mWordIx2CharIx[3] = 20, means that 4th word starts at character position 20 in the orginal command string
+		vector< cParseEntity  > mWordIxEntity; // mWordIxEntity[3].mCharPos==20, means that 4th word starts at character position 20 in the orginal command string
 
 		int mFirstArgAfterWord; // at which word we have first param. Usually after 3 words (ot msg send ...) but could be e.g. 2 ("ot help" ...)
 		int mCharShift; // *deprecated?* how many characters should we shift to get back to orginal string becuse auto-prepending like "help"->"ot help" (-3), or 0 often
