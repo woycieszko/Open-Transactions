@@ -546,6 +546,8 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 	if (mCommandLineString.empty()) { const string s="Command for processing was empty (string)"; _warn(s);  throw cErrParseSyntax(s); } // <--- THROW
 
 	{
+		// [doc] praser documentation
+
 		// char processing (remove double-space, parse quotations etc)
 		// TODO: quotation "..."
 		//            |  help
@@ -769,11 +771,6 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 		throw ;
 	}
 }
-
-//    0   1        2     3   4    5     word (as seend by Parse)
-// ot msg send-from alice bob --cc dave
-// ----- name ---- arg=1 2   ---3----   any_argument
-//                    ^ pos=21          
 
 vector<string> cCmdProcessing::UseComplete(int char_pos) {
 	if (mStateParse == tState::never) Parse( true );
