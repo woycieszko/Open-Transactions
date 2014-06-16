@@ -274,7 +274,48 @@ vector<T>& operator+=(vector<T> &a, const vector<T> &b) {
 
 // ====================================================================
 
-int RangesFindPosition(const vector<int> &R, int pos);
+// ====================================================================
+
+// algorthms
+/**
+returns 0 if R is empty; else, number of R[i] before which the position is
+*/
+template <class T>
+int RangesFindPosition(const vector<T> &R, const T &pos) {
+	int left=0;
+	int right=R.size()-1;
+
+	while (left<=right) {
+		int middle=(left+right)/2;
+
+		const auto &x = R.at(middle);
+
+		if(pos>R.at(right)) { // compare objects
+			return right;
+		}
+		else if(pos==x) { // compare objects
+			return middle;
+		}
+		else if(pos<=R.at(left)) { // compare objects
+			return left;
+		}
+		else if( pos>x) { // compare objects
+			if (pos < R.at(middle+1)) { // compare objects
+				return middle;
+		}
+			else left=middle+1;			
+		}
+		else if(pos<x) { // compare objects
+			if(pos > R.at(middle-1)) { // compare object
+				return middle-1;
+		}
+			else right=middle+1;
+		}
+
+	}	// end while
+	return 0; // empty, not found (?)
+}
+
 
 }; // namespace nUtils 
 

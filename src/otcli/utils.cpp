@@ -370,44 +370,6 @@ const string cEnvUtils::Compose() {
 // ====================================================================
 // algorthms
 
-/**
-returns 0 if R is empty; else, number of R[i] before which the position is
-*/
-int RangesFindPosition(const vector<int> &R, int pos) {
-int find=0;
-	int left =0;
-	int right=R.size()-1;
-	while(left<=right) {
-		int middle=(left+right)/2;
-		int x=R.at(middle);
-		if(pos>R.at(right)) {
-			return right;
-		}
-		else if(pos==x) {
-			return middle;
-		}
-		else if(pos<=R.at(left)) {
-			return left;
-		}
-		else if( pos>x) {
-			if(pos<R.at(middle+1)) {
-				find=middle;
-				return find;
-		}
-			else left=middle+1;			
-		}
-		else if(pos<x) {
-			if(pos>R.at(middle-1)) {
-				find=middle-1;
-				return find;
-		}
-			else right=middle+1;
-		}
-
-	}	// end while
-	return find;
-}
-
 
 }; // namespace nUtil
 

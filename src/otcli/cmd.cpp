@@ -21,6 +21,13 @@ void _cmd_test(  shared_ptr<cUseOT> use  );
 
 // ========================================================================================================================
 
+ostream& operator<<(ostream &stream , const cParseEntity & obj) {
+	stream << "{" << obj.KindIcon() << "," << obj.mCharPos << "," << obj.mSub << "}" ;
+	return stream;	
+}
+
+// ========================================================================================================================
+
 class cCmdParser_pimpl {
 	friend class cCmdParser;
 
@@ -564,13 +571,13 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 		// vector     =ot,msg,ls 
 		// mWordIx2CharIx [0]=2, [1]=6, [2]=11 (or so)
 		string curr_word="";
-		size_t curr_word_pos=0; // at which pos that current word had started
+		size_t curr_word_pos=0; // at which pos(at which char) that current word had started
 		for (size_t pos=0; pos<mCommandLineString.size(); ++pos) { // each character
 			char c = mCommandLineString.at(pos);
 			if (c==' ') { // white char
 				if (curr_word.size()) {  // if there was a previous word
 					mCommandLine.push_back(curr_word);
-					mData->mWordIxEntity.push_back( cParseEntity( curr_word_pos);
+					mData->mWordIx2Entity.push_back( cParseEntity( cParseEntity::tKind::unknown, curr_word_pos) );
 					curr_word="";
 				}
 			}
@@ -582,10 +589,10 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 
 		if (curr_word.size()) {
 			mCommandLine.push_back(curr_word);
-			mData->mWordIx2CharIx.push_back(curr_word_pos);
+			mData->mWordIx2Entity.push_back( cParseEntity( cParseEntity::tKind::unknown, curr_word_pos)  );
 		}
 		_mark("Vector of words: " << DbgVector(mCommandLine));
-		_mark("Words position mWordIx2CharIx=" << DbgVector(mData->mWordIx2CharIx));
+		_mark("Words position mWordIx2Entity=" << DbgVector(mData->mWordIx2Entity));
 	}
 
 	if (test_char2word) { for (int i=0; i<mCommandLineString.size(); ++i) {
@@ -627,15 +634,20 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 		_dbg3("Name of command is: " << name);
 		_dbg3("namepart_words="<<namepart_words);
 		mData->mFirstArgAfterWord = namepart_words;
+
+		mData->mWordIx2Entity.at(0).SetKind( cParseEntity::tKind::pre );
+
+		for (int i=1; i<=namepart_words; ++i) mData->mWordIx2Entity.at(i).SetKind( cParseEntity::tKind::cmdname ); // mark this words as part of cmdname
+		_mark("Words position mWordIx2Entity=" << DbgVector(mData->mWordIx2Entity));
 		
 		try {
 			mFormat = mParser->FindFormat( name ); // <--- 
 		} 
 		catch(cErrParseName &e) {
 			if (allowBadCmdname) { 
-				mFailedAfterBadCmdname=true;  return;  // <=== RETURN.  exit, but report that we given up early
+				mFailedAfterBadCmdname=true;  return;  // <=== RETURN.  exit, but report that we given up early  <===========================
 			}
-			else { throw ; } // else just panic - throw
+			else { throw ; } // else just panic - throw // <======
 		}
 		_info("Got format for name="<<name);
 
@@ -647,14 +659,16 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 		const size_t var_size_normal = format.mVar.size(); // number of the normal (mandatory) part of variables
 		const size_t var_size_all = format.mVar.size() + format.mVarExt.size(); // number of the size of all variables (normal + extra)
 		_dbg2("Format: size of vars: " << var_size_normal << " normal, and all is: " << var_size_all);
-		int pos = 2; // "msg send"
+
+		int pos = 2; // number of currently parsed word "msg send"
 
 		phase=1;
 		const size_t offset_to_var = pos; // skip this many words before we have first var, to conver pos(word number) to var number
 
-		if (phase==1) {
+		if (phase==1) { // phase: parse variable
 			while (true) { // parse var normal
 				const int var_nr = pos - offset_to_var;
+
 				_dbg2("phase="<<phase<<" pos="<<pos<<" var_nr="<<var_nr);
 				if (pos >= words_count) { _dbg1("reached END, pos="<<pos);	phase=9; break;	}
 				if (var_nr >= var_size_normal) { _dbg1("reached end of var normal, var_nr="<<var_nr); phase=2;	break;	}
@@ -662,6 +676,7 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 				string word = mCommandLine.at(pos);
 				_dbg1("phase="<<phase<<" pos="<<pos<<" word="<<word);
 				++pos;
+				mData->mWordIx2Entity.at( pos ).SetKind( cParseEntity::tKind::variable , var_nr );
 
 				if ( nUtils::CheckIfBegins("\"", word) ) { // TODO review memory access
 					_dbg1("Quotes detected in: " + word);
@@ -683,6 +698,8 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 			}
 		} // parse var phase 1
 
+		_mark("Words position mWordIx2Entity=" << DbgVector(mData->mWordIx2Entity));
+
 		if (phase==2) {
 			while (true) { // parse var normal
 				const int var_nr = pos - offset_to_var;
@@ -693,6 +710,7 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 				string word = mCommandLine.at(pos);
 				_dbg1("phase="<<phase<<" pos="<<pos<<" word="<<word);
 				++pos;
+				mData->mWordIx2Entity.at( pos ).SetKind( cParseEntity::tKind::variable_ext , var_nr );
 
 				if ( nUtils::CheckIfBegins("\"", word) ) { // TODO review memory access
 					_dbg1("Quotes detected in: " + word);
@@ -728,7 +746,8 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 				if (is_newopt) { // some new option like --private or --cc
 					if (inside_opt) { // finish the previos option, that didn't got a value then.  --fast [--private]
 						inside_opt=false;
-						mData->AddOpt(prev_name , "");
+						mData->AddOpt(prev_name , ""); // ***
+						mData->mWordIx2Entity.at( pos ).SetKind( cParseEntity::tKind::option_name ); // TODO sub number!
 						_dbg1("got option "<<prev_name<<" (empty)");
 					}
 					inside_opt=true; prev_name=word; // we now started the new option (and next iteration will finish it)
@@ -739,6 +758,8 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 						string value=word; // like "alice"
 						inside_opt=false;
 						mData->AddOpt(prev_name , value);
+						mData->mWordIx2Entity.at( pos-1 ).SetKind( cParseEntity::tKind::option_name ); // e.g. "--cc" // TODO sub number!
+						mData->mWordIx2Entity.at( pos ).SetKind( cParseEntity::tKind::option_value ); // e.g. "alice" // TODO sub number!
 						_dbg1("got option "<<prev_name<<" with value="<<value);
 					}
 					else { // we have a word like "bob", but we are not in middle of an option - syntax error
@@ -749,10 +770,12 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 			if (inside_opt) { // finish the previos LAST option, that didn't got a value then.  --fast [--private] (END)
 				inside_opt=false;
 				mData->AddOpt(prev_name , "");
+				mData->mWordIx2Entity.at( pos ).SetKind( cParseEntity::tKind::option_name ); // TODO sub number!
 				_dbg1("got option "<<prev_name<<" (empty) - on end");
 			}
 		} // phase 3
 
+		_note("Entities:" << DbgVector(mData->mWordIx2Entity));
 		_note("mVar parsed:    " + DbgVector(mData->mVar));
 		_note("mVarExt parsed: " + DbgVector(mData->mVarExt));
 		_note("mOption parsed  " + DbgMap(mData->mOption));
@@ -1048,7 +1071,8 @@ cCmdDataParse::cCmdDataParse()
 
 
 int cCmdDataParse::CharIx2WordIx(int char_ix) const {
-	int word_ix = RangesFindPosition( mWordIx2CharIx , char_ix );
+	cParseEntity goal( cParseEntity::tKind::unknown , char_ix );
+	int word_ix = RangesFindPosition( mWordIx2Entity , goal );
 	ASRT(  (word_ix >= 0) ); 
 	// TODO assert versus number of known words?
 	return word_ix;
@@ -1080,11 +1104,12 @@ void _cmd_test_completion( shared_ptr<cUseOT> use ) {
 //	,"ot~"
 //	,"ot msg send~ ali"
 //	,"ot msg send ali~"
-	,"ot msg sen~ alice bob"
-	,"ot msg send-from ali~ bo"
-	,"ot msg send-from ali bo~"
-	,"ot help securi~"
-	,"help securi~"
+//	,"ot msg sen~ alice bob"
+//	,"ot msg send-from ali~ bo"
+//	,"ot msg send-from ali bo~"
+	,"ot msg send-from alice bob subject message --prio 3 --dryr~"
+//	,"ot help securi~"
+//	,"help securi~"
 //	,"ot msg sendfrom ali bobxxxxx~"
 //	,"ot msg sendfrom ali       bob      subject message_hello --cc charlie --cc dave --prio 4 --cc eve --dry~ --cc xray"
 	};
