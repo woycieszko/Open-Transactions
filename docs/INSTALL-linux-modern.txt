@@ -68,20 +68,18 @@ $execute:
 	gpg:          There is no indication that the signature belongs to the owner.
 	Primary key fingerprint: 11E5 21D6 4698 2372 EB57  7A1F 8F08 71F2 0211 9294
 
-
-
 Unpack and prepare to build:
 $execute:
-	tar -xzf llvm-3.3.src.tar.gz
-	tar -xzf cfe-3.3.src.tar.gz
-	mv cfe-3.3.src llvm-3.3.src/tools/clang
+	tar -xzf llvm-3.4.1.src.tar.gz
+	tar -xzf cfe-3.4.1.src.tar.gz
+	mv cfe-3.4.1.src llvm-3.4.1.src/tools/clang
 	mkdir build
 	cd build
 
 Build:
-	If compiling with clang - must pass full path to compiler
-	CC=/usr/bin/clang CXX=/usr/bin/clang++ ../llvm-3.3.src/configure --prefix=$HOME/.local
-	make -j2
+If compiling with clang - must pass full path to compiler
+	CC=/usr/bin/clang CXX=/usr/bin/clang++ ../llvm-3.4.1.src/configure --prefix=$HOME/.local
+	ionice -c3 make -j2
 	make install
 
 --------------------------------------------------------------------------

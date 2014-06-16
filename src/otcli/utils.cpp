@@ -375,11 +375,43 @@ const string cEnvUtils::Compose() {
 returns 0 if R is empty; else, number of R[i] before which the position is
 */
 int RangesFindPosition(const vector<int> &R, int pos) {
-	for(size_t i=0; i<R.size(); i++) {
-		if (pos < R[i]) return i;
+	int find=0;
+	int left =0;
+	int right=R.size()-1;
+
+	while(left<=right){
+		int middle=(left+right)/2;
+		int x=R[middle];
+		if(pos>R[right]){
+		return right;
 	}
-	return 0;
+		
+	else if(pos==x){
+			return middle;
+		}
+		else if(pos<=R[left]){
+			return left;
+	}
+	else	if( pos>x){
+			if(pos<R[middle+1])
+			{
+				find=middle;
+				return find;
+			}
+			else left=middle+1;			
+			}
+		else if(pos<x){
+			if(pos>R[middle-1]){
+				find=middle-1;
+				return find;
+			}
+			else right=middle+1;
+		}
+
 }
+	return find;
+}
+
 
 }; // namespace nUtil
 
