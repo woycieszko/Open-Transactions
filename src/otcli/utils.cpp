@@ -391,14 +391,14 @@ int RangesFindPosition(const vector<int> &R, int pos) {
 		else if(pos<=R.at(left)) {
 			return left;
 			}
-		else if( pos>x){
+		else if( pos>x) {
 			if(pos<R.at(middle+1)) {
 				find=middle;
 				return find;
 			}
 			else left=middle+1;			
 			}
-		else if(pos<x){
+		else if(pos<x) {
 			if(pos>R.at(middle-1)) {
 				find=middle-1;
 				return find;
