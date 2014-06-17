@@ -217,7 +217,11 @@ void cCmdParser::Init() {
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			return vector<string> { "" }; // this should be empty option, let's continue
 		}
-		, false
+	);
+
+	cParamInfo pBoolBoring( "yes-no", "true-false",
+		pBool.funcValid , pBool.funcHint
+		, cParamInfo::eFlags::isBoring | cParamInfo::eFlags::takesValue
 	);
 
 	cParamInfo pText( "text", "text",
@@ -297,7 +301,7 @@ void cCmdParser::Init() {
 
 	//======== ot account ========
 
-	AddFormat("account", {}, {}, { {"--dryrun", pBool} },
+	AddFormat("account", {}, {}, { {"--dryrun", pBoolBoring} },
 		LAMBDA { auto &D=*d; return U.DisplayDefaultID(nUtils::eSubjectType::Account, D.has("--dryrun") ); } ); //TODO
 
 	AddFormat("account new", {pAsset, pAccountNewName}, {}, { {"--dryrun", pBool} },
@@ -780,7 +784,6 @@ void cCmdProcessing::_Parse(bool allowBadCmdname) {
 		_note("mVar parsed:    " + DbgVector(mData->mVar));
 		_note("mVarExt parsed: " + DbgVector(mData->mVarExt));
 		_note("mOption parsed  " + DbgMap(mData->mOption));
- 
 	} 
 	catch (cErrParse &e) {
 		_warn("Command can not be parsed " << e.what());
@@ -864,8 +867,8 @@ void cValidateError::Print() const {
 
 // ========================================================================================================================
 
-cParamInfo::cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint, bool mTakesValue) 
-	: mName(name), mDescr(descr), funcValid(valid), funcHint(hint), mTakesValue(mTakesValue)
+cParamInfo::cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint, tFlags mFlags) 
+	: mName(name), mDescr(descr), funcValid(valid), funcHint(hint), mFlags(mFlags)
 { }
 
 cParamInfo::cParamInfo(const string &name, const string &descr)
@@ -938,13 +941,12 @@ void cCmdFormat::PrintUsageShort(ostream &out) const {
 
 	written=false; // options
 	{ 
-		auto color1 = cc::fore::lightblue;
-		out << color1;
 		size_t nr=0;  
 		for(auto opt : mOption) { if (nr) out<<" ";  
 			string name = opt.first;
 			const cParamInfo info = opt.second;
-			out << "[" << name ; // --cc 
+			auto color1 = (info.getFlags().n.isBoring)  ?  cc::fore::lightblack  :  cc::fore::lightblue;
+			out << color1 << "[" << name ; // --cc 
 			if (info.getTakesValue()) out << " " << cc::fore::lightcyan << info.getName() << color1 ; // username
 			out <<']';  
 			++nr; 

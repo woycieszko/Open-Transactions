@@ -369,6 +369,7 @@ Info about Parameter: How to validate and how to complete this argument
 */
 class cParamInfo {  MAKE_CLASS_NAME("cParamInfo");
 	public:
+		friend class cCmdParser; // allow direct access - will need that when building pNym etc for shorter syntax
 
 		// bool validation_function ( otuse, partial_data, curr_word_ix )
 		// use: this function should validate the curr_word_ix out of data - data.ArgDef
@@ -382,6 +383,21 @@ class cParamInfo {  MAKE_CLASS_NAME("cParamInfo");
 		// ot msg sendfrom alice bob hel<TAB> --prio 4   ( use , data["alice", "bob", "hel"  ], 2 ) 
 		typedef function< vector<string> ( nUse::cUseOT &, cCmdData &, size_t ) > tFuncHint;
 
+		enum eFlags {
+				takesValue = 1 << 0,// if used as option, then: YES it take a value, or NO is it an boolean option like --dry-run
+				isBoring = 2 << 0, // is the option boring option like --dry-run
+		}; // edit-warning! always edit this and the following struct together so they match:
+		struct sFlags { // as struct with named fields
+			bool takesValue:1;
+			bool isBoring:1;
+		};
+
+		typedef std::underlying_type<eFlags>::type tFlags_bits;
+		union tFlags { tFlags_bits bits; sFlags n; 
+			tFlags() { bits = 0 | eFlags::takesValue ; } // defaults
+			tFlags(tFlags_bits _bits) { bits=_bits; } 
+		}; // now you can access the data both ways
+
 	protected:
 		string mName; // short name
 		string mDescr; // medium description
@@ -389,17 +405,17 @@ class cParamInfo {  MAKE_CLASS_NAME("cParamInfo");
 		tFuncValid funcValid;
 		tFuncHint funcHint;
 
-		bool mTakesValue; // if used as option, does it take a value (or is it an yes/no option)
-
+		tFlags mFlags; 
 	public:
 		cParamInfo()=default;
-		cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint, bool mTakesValue=true);
+		cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint, tFlags mFlags = tFlags());
 		cParamInfo(const string &name, const string &descr); // to be used for renaming
 
 		operator string() const noexcept { return mName; }
 		std::string getName() const noexcept { return mName; }
 		std::string getName2() const noexcept { return mName+"("+mDescr+")"; }
-		bool getTakesValue() const noexcept { return mTakesValue; }
+		bool getTakesValue() const noexcept { return mFlags.n.takesValue; }
+		tFlags getFlags() const noexcept { return mFlags; }
 
 		cParamInfo operator<<(const cParamInfo &B) const;
 
