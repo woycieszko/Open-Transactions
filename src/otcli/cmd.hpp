@@ -389,14 +389,17 @@ class cParamInfo {  MAKE_CLASS_NAME("cParamInfo");
 		tFuncValid funcValid;
 		tFuncHint funcHint;
 
+		bool mTakesValue; // if used as option, does it take a value (or is it an yes/no option)
+
 	public:
 		cParamInfo()=default;
-		cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint);
-		cParamInfo(const string &name, const string &descr); // to be used for renaming etc
+		cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint, bool mTakesValue=true);
+		cParamInfo(const string &name, const string &descr); // to be used for renaming
 
 		operator string() const noexcept { return mName; }
 		std::string getName() const noexcept { return mName; }
 		std::string getName2() const noexcept { return mName+"("+mDescr+")"; }
+		bool getTakesValue() const noexcept { return mTakesValue; }
 
 		cParamInfo operator<<(const cParamInfo &B) const;
 

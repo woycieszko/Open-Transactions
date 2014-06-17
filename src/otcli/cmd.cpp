@@ -217,6 +217,7 @@ void cCmdParser::Init() {
 		[] ( cUseOT & use, cCmdData & data, size_t curr_word_ix  ) -> vector<string> {
 			return vector<string> { "" }; // this should be empty option, let's continue
 		}
+		, false
 	);
 
 	cParamInfo pText( "text", "text",
@@ -863,8 +864,8 @@ void cValidateError::Print() const {
 
 // ========================================================================================================================
 
-cParamInfo::cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint) 
-	: mName(name), mDescr(descr), funcValid(valid), funcHint(hint)
+cParamInfo::cParamInfo(const string &name, const string &descr, tFuncValid valid, tFuncHint hint, bool mTakesValue) 
+	: mName(name), mDescr(descr), funcValid(valid), funcHint(hint), mTakesValue(mTakesValue)
 { }
 
 cParamInfo::cParamInfo(const string &name, const string &descr)
@@ -929,18 +930,23 @@ void cCmdFormat::PrintUsageShort(ostream &out) const {
 
 	written=false;
 	{ 
-		out << cc::fore::lightcyan;
+		auto color1 = cc::fore::lightcyan;
+		out << color1;
 		size_t nr=0;  for(auto var : mVarExt) { if (nr) out<<" ";  out << '[' << (string)var <<']';  ++nr; written=true; }
 	}
 	if (written) out<<" ";
 
-	written=false;
+	written=false; // options
 	{ 
-		out << cc::fore::lightblue;
+		auto color1 = cc::fore::lightblue;
+		out << color1;
 		size_t nr=0;  
 		for(auto opt : mOption) { if (nr) out<<" ";  
 			string name = opt.first;
-			out << "[" << name <<']';  
+			const cParamInfo info = opt.second;
+			out << "[" << name ; // --cc 
+			if (info.getTakesValue()) out << " " << cc::fore::lightcyan << info.getName() << color1 ; // username
+			out <<']';  
 			++nr; 
 			written=true;
 		}		
