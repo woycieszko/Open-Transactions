@@ -1,5 +1,6 @@
 
 #include "cmd.hpp"
+#include "cmd_detail.hpp"
 
 #include "lib_common2.hpp"
 #include "ccolor.hpp"
@@ -10,6 +11,24 @@ namespace nNewcli {
 INJECT_OT_COMMON_USING_NAMESPACE_COMMON_2; // <=== namespaces
 
 using namespace nUse;
+
+void cCmdParser::_AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format ) {
+	mI->mTree.insert( cCmdParser_pimpl::tTreePair ( name , format ) );
+	_info("Add format for command name (" << (string)name << "), now size=" << mI->mTree.size() << " new format is: ");
+	// format->Debug();
+}
+
+void cCmdParser::AddFormat(
+			const string &name, 
+			const vector<cParamInfo> &var,
+			const vector<cParamInfo> &varExt,
+			const map<string, cParamInfo> &opt,
+			const cCmdExecutable::tFunc &exec)
+{
+	using namespace nOper;
+	auto format = std::make_shared< cCmdFormat >( cCmdExecutable(exec), var, varExt, opt + mI->mCommonOpt );
+	_AddFormat(name, format);
+}
 
 
 void cCmdParser::Init() {
@@ -153,7 +172,7 @@ void cCmdParser::Init() {
 
 	cParamInfo pBoolBoring( "yes-no", "true-false",
 		pBool.funcValid , pBool.funcHint
-		, cParamInfo::eFlags::isBoring | cParamInfo::eFlags::takesValue
+		, cParamInfo::eFlags::isBoring 
 	);
 
 	cParamInfo pText( "text", "text",
@@ -189,6 +208,12 @@ void cCmdParser::Init() {
 			return vector<string> { "" }; //TODO hinting function for msg index
 		}
 	);
+
+	// ===========================================================================
+	// COMMON OPTIONS
+
+	mI->mCommonOpt.clear();
+	mI->mCommonOpt.insert( {"--dryrun", pBoolBoring} );
 
 	// ===========================================================================
 
@@ -233,13 +258,13 @@ void cCmdParser::Init() {
 
 	//======== ot account ========
 
-	AddFormat("account", {}, {}, { {"--dryrun", pBoolBoring} },
+	AddFormat("account", {}, {}, {},
 		LAMBDA { auto &D=*d; return U.DisplayDefaultID(nUtils::eSubjectType::Account, D.has("--dryrun") ); } ); //TODO
 
-	AddFormat("account new", {pAsset, pAccountNewName}, {}, { {"--dryrun", pBool} },
+	AddFormat("account new", {pAsset, pAccountNewName}, {}, {},
 		LAMBDA { auto &D=*d; return U.AccountCreate( D.V(1), D.V(2), D.has("--dryrun") ); } );
 
-	AddFormat("account refresh", {}, {pAccount}, { {"--dryrun", pBool}, {"--all", pBool}},
+	AddFormat("account refresh", {}, {pAccount}, { {"--all", pBool } },
 		LAMBDA { auto &D=*d; return U.AccountRefresh( D.v(1, U.AccountGetName(U.AccountGetDefault())), D.has("--all"), D.has("--dryrun") ); } );
 
 	AddFormat("account set-default", {pAccount}, {}, { {"--dryrun", pBool}},
@@ -293,7 +318,7 @@ void cCmdParser::Init() {
 	AddFormat("msg send-from", {pFrom, pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
 		LAMBDA { auto &D=*d; return U.MsgSend(D.V(1), D.V(2) + D.o("--cc") , D.v(3), D.v(4,"nosubject"), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
 
-	AddFormat("msg send-to", {pTo}, {pSubj, pMsg}, { {"--dryrun",pBool} , {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
+	AddFormat("msg send-to", {pTo}, {pSubj, pMsg}, { {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt} },
 		LAMBDA { auto &D=*d; return U.MsgSend(U.NymGetName(U.NymGetDefault()), D.V(1) + D.o("--cc"), D.v(2,"nosubject"), D.v(3), stoi(D.o1("--prio","0")), D.has("--dryrun")); }	);
 
 	AddFormat("msg rm", {pNym, pOnceInt}, {}, { {"--dryrun", pBool} /*{"--all", pBool}*/ }, // FIXME proper handle option without parameter!

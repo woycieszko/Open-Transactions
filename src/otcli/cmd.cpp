@@ -2,6 +2,7 @@
 /* See header file .hpp for info */
 
 #include "cmd.hpp"
+#include "cmd_detail.hpp"
 
 #include "lib_common2.hpp"
 #include "ccolor.hpp"
@@ -22,15 +23,6 @@ ostream& operator<<(ostream &stream , const cParseEntity & obj) {
 
 // ========================================================================================================================
 
-class cCmdParser_pimpl {
-	friend class cCmdParser;
-
-	typedef map< cCmdName , shared_ptr<cCmdFormat> >::value_type tTreePair; // type of element (pair) in tree-map. TODO: will be not needed in C+11 map emplace
-
-	private:
-		map< cCmdName , shared_ptr<cCmdFormat> > mTree;
-};
-
 cCmdParser::cCmdParser() 
 : mI( new cCmdParser_pimpl )
 { }
@@ -40,12 +32,6 @@ cCmdParser::~cCmdParser() { } // let's instantize default destr in all TUs so co
 cCmdExecutable::tExitCode Execute1( shared_ptr<cCmdData> , nUse::cUseOT ) {
 	_mark("***Execute1***");
 	return cCmdExecutable::sSuccess;
-}
-
-void cCmdParser::AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format ) {
-	mI->mTree.insert( cCmdParser_pimpl::tTreePair ( name , format ) );
-	_info("Add format for command name (" << (string)name << "), now size=" << mI->mTree.size() << " new format is: ");
-	// format->Debug();
 }
 
 void cCmdParser::PrintUsage() {
@@ -61,17 +47,6 @@ void cCmdParser::PrintUsage() {
 	}
 	out << cc::console;
 	out << endl;
-}
-
-void cCmdParser::AddFormat(
-			const string &name, 
-			const vector<cParamInfo> &var,
-			const vector<cParamInfo> &varExt,
-			const map<string, cParamInfo> &opt,
-			const cCmdExecutable::tFunc &exec)
-{
-	auto format = std::make_shared< cCmdFormat >( cCmdExecutable(exec), var, varExt, opt );
-	AddFormat(name, format);
 }
 
 

@@ -280,6 +280,17 @@ vector<T>& operator+=(vector<T> &a, const vector<T> &b) {
 	return a;
 }
 
+// map
+template <class TK,class TV>
+map<TK,TV> operator+(const map<TK,TV> &a, const map<TK,TV> &b) {
+	map<TK,TV> ret = a;
+	for (const auto & elem : b) {
+		ret.insert(elem);
+	}
+	return ret;
+}
+
+
 } // nOT::nUtils::nOper
 
 // ====================================================================

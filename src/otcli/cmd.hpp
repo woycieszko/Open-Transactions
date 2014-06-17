@@ -124,7 +124,8 @@ The parser (can be used many times), that should contain some tree of possible c
 class cCmdParser : public enable_shared_from_this<cCmdParser> { MAKE_CLASS_NAME("cCmdParser");
 	protected:
 		unique_ptr< cCmdParser_pimpl > mI;
-		void AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format);
+		void _AddFormat( const cCmdName &name, shared_ptr<cCmdFormat> format); // warning, will not do certain things like adding common defaults
+
 		void AddFormat(
 			const string &name, 
 			const vector<cParamInfo> &var,

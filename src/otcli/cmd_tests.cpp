@@ -1,5 +1,6 @@
 
 #include "cmd.hpp"
+#include "cmd_detail.hpp"
 
 #include "lib_common2.hpp"
 #include "ccolor.hpp"
@@ -24,9 +25,9 @@ void cCmdParser::_cmd_test_completion( shared_ptr<cUseOT> use ) {
 	auto alltest = vector<string>{ ""
 //	,"~"
 //	,"ot~"
-//	,"ot msg send~ ali"
+	,"ot msg send~ ali"
 //	,"ot msg send ali~"
-//	,"ot msg sen~ alice bob"
+	,"ot msg sen~ alice bob"
 //	,"ot msg send-from ali~ bo"
 //	,"ot msg send-from ali bo~"
 	,"ot msg send-from alice bob subject message --prio 3 --dryr~"
