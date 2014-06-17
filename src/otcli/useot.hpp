@@ -29,19 +29,18 @@ namespace nUse {
 		bool mNymsMy_loaded;
 		bool OTAPI_loaded;
 		bool OTAPI_error;
-		enum class eSubjectType {Account, Asset, User, Server, Nym};
 
 	private:
 
 		string mDbgName;
 
-		map<string, ID> mDefaultIDs; //TODO take eSubjectType as a key
+		map<nUtils::eSubjectType, ID> mDefaultIDs;
 		const string mDataFolder;
 		const string mDefaultIDsFile;
 
 		typedef const ID ( cUseOT::*FPTR ) (const string &);
 
-		map<eSubjectType, FPTR> subjectGetIDFunc; ///< Map to store pointers to GetID functions
+		map<nUtils::eSubjectType, FPTR> subjectGetIDFunc; ///< Map to store pointers to GetID functions
 
 	private:
 
@@ -57,8 +56,8 @@ namespace nUse {
 		bool Init();
 		void CloseApi();
 
-		VALID bool CheckIfExists(eSubjectType type, const string & subject);
-		EXEC const string GetDefaultID(const string & type); //TODO
+		VALID bool CheckIfExists(const nUtils::eSubjectType type, const string & subject);
+		EXEC bool DisplayDefaultID(const nUtils::eSubjectType type, bool dryrun);
 
 		//================= account =================
 

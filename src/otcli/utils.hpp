@@ -212,13 +212,22 @@ const std::string GetMultiline(string endLine = "~");
 vector<string> SplitString(const string & str);
 
 const bool checkPrefix(const string & str, char prefix = '^');
+
+// ====================================================================
+// nUse utils
+
+enum class eSubjectType {Account, Asset, User, Server, Unknown};
+
+string SubjectType2String(const eSubjectType & type);
+eSubjectType String2SubjectType(const string & type);
+
 // ====================================================================
 // operation on files
 
 class cConfigManager {
 public:
-	bool Load(const string & fileName, map<string, string> & configMap);
-	void Save(const string & fileName, const map<string, string> & configMap);
+	bool Load(const string & fileName, map<eSubjectType, string> & configMap);
+	void Save(const string & fileName, const map<eSubjectType, string> & configMap);
 };
 
 extern cConfigManager configManager;
@@ -235,6 +244,7 @@ class cEnvUtils {
 public:
 	const string Compose();
 };
+
 // ====================================================================
 
 namespace nOper { // nOT::nUtils::nOper

@@ -275,11 +275,49 @@ const bool checkPrefix(const string & str, char prefix){
 		return true;
 	return false;
 }
+
+// ====================================================================
+// nUse utils
+
+string SubjectType2String(const eSubjectType & type) {
+	using subject = eSubjectType;
+
+	switch (type) {
+	case subject::Account:
+		return "Account";
+	case subject::Asset:
+			return "Asset";
+	case subject::User:
+			return "User";
+	case subject::Server:
+			return "Server";
+	case subject::Unknown:
+				return "";
+	}
+	return "";
+}
+
+eSubjectType String2SubjectType(const string & type) {
+	using subject = eSubjectType;
+
+	if (type == "Account")
+		return subject::Account;
+	if (type == "Asset")
+			return subject::Asset;
+	if (type == "User")
+			return subject::User;
+	if (type == "Server")
+			return subject::Server;
+
+	return subject::Unknown;
+}
+
 // ====================================================================
 // operation on files
 
-bool cConfigManager::Load(const string & fileName, map<string, string> & configMap){
+bool cConfigManager::Load(const string & fileName, map<eSubjectType, string> & configMap){
 	_dbg1("Loading defaults.");
+
 	std::ifstream inFile(fileName.c_str());
 	if( inFile.good() && !(inFile.peek() == std::ifstream::traits_type::eof()) ) {
 		string line;
@@ -288,11 +326,11 @@ bool cConfigManager::Load(const string & fileName, map<string, string> & configM
 			vector<string> vec = SplitString(line);
 			if (vec.size() == 2) {
 			_dbg3("config2:"<<vec.at(0)<<","<<vec.at(1));
-				configMap.insert ( std::pair<string, string>( vec.at(0), vec.at(1) ) );
+				configMap.insert ( std::pair<eSubjectType, string>( String2SubjectType( vec.at(0) ), vec.at(1) ) );
 			}
 			else {
 			_dbg3("config1:"<<vec.at(0));
-				configMap.insert ( std::pair<string, string>( vec.at(0), "-" ) );
+				configMap.insert ( std::pair<eSubjectType, string>( String2SubjectType( vec.at(0) ), "-" ) );
 			}
 		}
 		_dbg1("Finished loading");
@@ -302,12 +340,13 @@ bool cConfigManager::Load(const string & fileName, map<string, string> & configM
 	return false;
 }
 
-void cConfigManager::Save(const string & fileName, const map<string, string> & configMap) {
+void cConfigManager::Save(const string & fileName, const map<eSubjectType, string> & configMap) {
 	_dbg1("Will save config");
+
 	std::ofstream outFile(fileName.c_str());
 	for (auto pair : configMap) {
-		_dbg2("Got: "<<pair.first<<","<<pair.second);
-		outFile << pair.first << " ";
+		_dbg2("Got: "<<SubjectType2String(pair.first)<<","<<pair.second);
+		outFile << SubjectType2String(pair.first) << " ";
 		outFile << pair.second;
 		outFile << endl;
 		_dbg3("line saved");

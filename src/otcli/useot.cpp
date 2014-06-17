@@ -23,10 +23,10 @@ cUseOT::cUseOT(const string &mDbgName)
 {
 	_dbg1("Creating cUseOT "<<DbgName());
 	FPTR fptr;
-	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Account, fptr = &cUseOT::AccountGetId) );
-	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Asset, fptr = &cUseOT::AssetGetId) );
-	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Nym, fptr = &cUseOT::NymGetId) );
-	subjectGetIDFunc.insert(std::make_pair(eSubjectType::Server, fptr = &cUseOT::ServerGetId) );
+	subjectGetIDFunc.insert(std::make_pair(nUtils::eSubjectType::Account, fptr = &cUseOT::AccountGetId) );
+	subjectGetIDFunc.insert(std::make_pair(nUtils::eSubjectType::Asset, fptr = &cUseOT::AssetGetId) );
+	subjectGetIDFunc.insert(std::make_pair(nUtils::eSubjectType::User, fptr = &cUseOT::NymGetId) );
+	subjectGetIDFunc.insert(std::make_pair(nUtils::eSubjectType::Server, fptr = &cUseOT::ServerGetId) );
 }
 
 
@@ -50,25 +50,27 @@ void cUseOT::LoadDefaults() {
 	// TODO What if there is, for example no accounts?
 	// TODO Check if defaults are correct.
 	if ( !configManager.Load(mDefaultIDsFile, mDefaultIDs) ) {
-		_dbg1("Cannot open" + mDefaultIDsFile + " file, setting IDs with ID 0 as default");
-		mDefaultIDs["AccountID"] = OTAPI_Wrap::GetAccountWallet_ID(0);
+		_dbg1("Cannot open" + mDefaultIDsFile + " file, setting IDs with ID 0 as default"); //TODO check if there is any nym in wallet
 		ID accountID = OTAPI_Wrap::GetAccountWallet_ID(0);
 		ID assetID = OTAPI_Wrap::GetAssetType_ID(0);
 		ID userID = OTAPI_Wrap::GetNym_ID(0);
 		ID serverID = OTAPI_Wrap::GetServer_ID(0);
 
-		/*  (屮ﾟДﾟ)屮 compilation error
-		mDefaultIDs.insert(std::pair(eSubjectType::Account, accountID));
-		mDefaultIDs.insert(std::pair(eSubjectType::Asset, assetID));
-		mDefaultIDs.insert(std::pair(eSubjectType::User, userID));
-		mDefaultIDs.insert(std::pair(eSubjectType::Server, serverID));
-		*/
+		mDefaultIDs.insert(std::make_pair(nUtils::eSubjectType::Account, accountID));
+		mDefaultIDs.insert(std::make_pair(nUtils::eSubjectType::Asset, assetID));
+		mDefaultIDs.insert(std::make_pair(nUtils::eSubjectType::User, userID));
+		mDefaultIDs.insert(std::make_pair(nUtils::eSubjectType::Server, serverID));
 	}
 }
 
-const string cUseOT::GetDefaultID(const string & type) {
-	if(!Init()) return "";
-	return mDefaultIDs.at(type);
+bool cUseOT::DisplayDefaultID(const nUtils::eSubjectType type, bool dryrun) {
+	_fact("get default " << nUtils::SubjectType2String(type) );
+	if(dryrun) return true;
+	if(!Init()) return false;
+	ID defaultID = mDefaultIDs.at(type);
+//	string defaultName = ;
+	nUtils::DisplayStringEndl(cout, defaultID );
+	return true;
 }
 
 bool cUseOT::Init() { // TODO init on the beginning of application execution
@@ -107,7 +109,7 @@ bool cUseOT::Init() { // TODO init on the beginning of application execution
 	return OTAPI_loaded;
 }
 
-bool cUseOT::CheckIfExists(eSubjectType type, const string & subject) {
+bool cUseOT::CheckIfExists(const nUtils::eSubjectType type, const string & subject) {
 	if(!Init()) return false;
 
 	ID subjectID = (this->*cUseOT::subjectGetIDFunc.at(type))(subject);
@@ -142,7 +144,7 @@ const int64_t cUseOT::AccountGetBalance(const string & accountName) {
 const string cUseOT::AccountGetDefault() {
 	if(!Init())
 		return "";
-	return mDefaultIDs.at("AccountID");
+	return mDefaultIDs.at(nUtils::eSubjectType::Account);
 }
 
 const ID cUseOT::AccountGetId(const string & accountName) {
@@ -167,7 +169,7 @@ const string cUseOT::AccountGetName(const ID & accountID) {
 
 bool cUseOT::AccountRemove(const string & account, bool dryrun) { ///<
 	_fact("account rm " << account);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	if(OTAPI_Wrap::Wallet_CanRemoveAccount (AccountGetId(account))) {
@@ -175,7 +177,7 @@ bool cUseOT::AccountRemove(const string & account, bool dryrun) { ///<
 		return false;
 	}
 
-	if( OTAPI_Wrap::deleteAssetAccount( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), AccountGetId(account) ) ) { //FIXME should be
+	if( OTAPI_Wrap::deleteAssetAccount( mDefaultIDs.at(nUtils::eSubjectType::Server), mDefaultIDs.at(nUtils::eSubjectType::User), AccountGetId(account) ) ) { //FIXME should be
 		_erro("Failure deleting account: " + account);
 		return false;
 	}
@@ -185,7 +187,7 @@ bool cUseOT::AccountRemove(const string & account, bool dryrun) { ///<
 
 bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
 	_fact("account refresh " << accountName << " all=" << all);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	OT_ME madeEasy;
@@ -239,7 +241,7 @@ bool cUseOT::AccountRefresh(const string & accountName, bool all, bool dryrun) {
 
 bool cUseOT::AccountRename(const string & account, const string & newAccountName, bool dryrun) {
 	_fact("account mv from " << account << " to " << newAccountName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	if( AccountSetName (AccountGetId(account), newAccountName) ) {
@@ -253,7 +255,7 @@ bool cUseOT::AccountRename(const string & account, const string & newAccountName
 bool cUseOT::AccountSetName(const string & accountID, const string & newAccountName) { //TODO: passing to function: const string & nymName, const string & signerNymName,
 	if(!Init()) return false;
 
-	if ( !OTAPI_Wrap::SetAccountWallet_Name (accountID, mDefaultIDs.at("UserID"), newAccountName) ) {
+	if ( !OTAPI_Wrap::SetAccountWallet_Name (accountID, mDefaultIDs.at(nUtils::eSubjectType::User), newAccountName) ) {
 		_erro("Failed trying to name new account: " << accountID);
 		return false;
 	}
@@ -263,12 +265,12 @@ bool cUseOT::AccountSetName(const string & accountID, const string & newAccountN
 
 bool cUseOT::AccountCreate(const string & assetName, const string & newAccountName, bool dryrun) {
 	_fact("account new asset=" << assetName << "accountName=" << newAccountName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	OT_ME madeEasy;
 	string response;
-	response = madeEasy.create_asset_acct(mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), AssetGetId(assetName));
+	response = madeEasy.create_asset_acct(mDefaultIDs.at(nUtils::eSubjectType::Server), mDefaultIDs.at(nUtils::eSubjectType::User), AssetGetId(assetName));
 
 	// -1 error, 0 failure, 1 success.
 	if (1 != madeEasy.VerifyMessageSuccess(response))
@@ -306,7 +308,7 @@ const vector<string> cUseOT::AccountGetAllNames() {
 
 bool cUseOT::AccountDisplay(const string & account, bool dryrun) {
 	_fact("account show account=" << account);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	OT_ME madeEasy;
@@ -323,7 +325,7 @@ bool cUseOT::AccountDisplay(const string & account, bool dryrun) {
 
 bool cUseOT::AccountDisplayAll(bool dryrun) {
 	_fact("account ls");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	for(std::int32_t i = 0 ; i < OTAPI_Wrap::GetAccountCount();i++) {
@@ -338,16 +340,16 @@ bool cUseOT::AccountDisplayAll(bool dryrun) {
 
 bool cUseOT::AccountSetDefault(const string & account, bool dryrun) {
 	_fact("account set-default " << account);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
-	mDefaultIDs.at("AccountID") = AccountGetId(account);
+	mDefaultIDs.at(nUtils::eSubjectType::Account) = AccountGetId(account);
 	return true;
 }
 
 bool cUseOT::AccountTransfer(const string & accountFrom, const string & accountTo, const int64_t & amount, const string & note, bool dryrun) {
 	_fact("account transfer  from " << accountFrom << " to " << accountTo << " amount=" << amount << " note=" << note);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	OT_ME madeEasy;
@@ -369,7 +371,7 @@ bool cUseOT::AccountTransfer(const string & accountFrom, const string & accountT
 
 bool cUseOT::AccountInDisplay(const string & account, bool dryrun) {
 	_fact("account-in ls " << account);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	ID accountID = AccountGetId(account);
@@ -419,7 +421,7 @@ bool cUseOT::AccountInDisplay(const string & account, bool dryrun) {
 
 //bool cUseOT::AccountInAccept(const string & account, bool dryrun) {
 //	_fact("account-in accept " << account);
-//	if(dryrun) return false;
+//	if(dryrun) return true;
 //	if(!Init()) return false;
 //
 //	ID accountID = AccountGetId(account);
@@ -466,7 +468,7 @@ const string cUseOT::AssetGetName(const ID & assetID) {
 
 bool cUseOT::AssetDisplayAll(bool dryrun) {
 	_fact("asset ls");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	_dbg3("Retrieving all asset names");
@@ -499,12 +501,12 @@ const string cUseOT::AssetGetContract(const string & asset){
 }
 
 const string cUseOT::AssetGetDefault(){
-	return mDefaultIDs.at("PurseID");
+	return mDefaultIDs.at(nUtils::eSubjectType::Asset);
 }
 
 bool cUseOT::AssetIssue(const string & serverID, const string & nymID, bool dryrun) { // Issue new asset type
 	_fact("asset ls");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string signedContract;
@@ -527,7 +529,7 @@ bool cUseOT::AssetIssue(const string & serverID, const string & nymID, bool dryr
 
 bool cUseOT::AssetNew(const string & nym, bool dryrun) {
 	_fact("asset new for nym=" << nym);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 	string xmlContents;
 	nUtils::cEnvUtils envUtils;
@@ -539,7 +541,7 @@ bool cUseOT::AssetNew(const string & nym, bool dryrun) {
 
 bool cUseOT::AssetRemove(const string & asset, bool dryrun) {
 	_fact("asset rm " << asset);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string assetID = AssetGetId(asset);
@@ -556,7 +558,7 @@ bool cUseOT::AssetRemove(const string & asset, bool dryrun) {
 void cUseOT::AssetSetDefault(const std::string & assetName){
 	if(!Init())
 		return ;
-	mDefaultIDs.at("PurseID") = AssetGetId(assetName);
+	mDefaultIDs.at(nUtils::eSubjectType::Asset) = AssetGetId(assetName);
 }
 
 const string cUseOT::ContractSign(const std::string & nymID, const std::string & contract){ // FIXME can't sign contract with this (assetNew() functionality)
@@ -599,7 +601,7 @@ bool cUseOT::MsgDisplayForNym(const string & nymName, bool dryrun) { ///< Get al
 
 bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, const string & subject, const string & msg, int prio, bool dryrun) {
 	_fact("MsgSend " << nymSender << " to " << DbgVector(nymRecipient) << " msg=" << msg << " subj="<<subject<<" prio="<<prio);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string outMsg;
@@ -627,7 +629,7 @@ bool cUseOT::MsgSend(const string & nymSender, vector<string> nymRecipient, cons
 	for (auto varID : recipientID) {
 		_dbg1("Sending message from " + senderID + " to " + varID );
 
-		string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at("ServerID"), senderID, varID, outMsg);
+		string strResponse = madeEasy.send_user_msg ( mDefaultIDs.at(nUtils::eSubjectType::Server), senderID, varID, outMsg);
 
 		// -1 error, 0 failure, 1 success.
 		if (1 != madeEasy.VerifyMessageSuccess(strResponse))
@@ -700,7 +702,7 @@ bool cUseOT::NymCheck(const string & nymName, bool dryrun) { // wip
 
 	ID nymID = NymGetId(nymName);
 	OT_ME madeEasy;
-	string strResponse = madeEasy.check_user( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID"), nymID );
+	string strResponse = madeEasy.check_user( mDefaultIDs.at(nUtils::eSubjectType::Server), mDefaultIDs.at(nUtils::eSubjectType::User), nymID );
 	// -1 error, 0 failure, 1 success.
 	if (1 != madeEasy.VerifyMessageSuccess(strResponse)) {
 		_erro("Failed trying to download public key for nym: " << nymName << "(" << nymID << ")" );
@@ -776,7 +778,7 @@ const vector<string> cUseOT::NymGetAllNames() {
 
 bool cUseOT::NymDisplayAll(bool dryrun) {
 	_fact("nym ls ");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	NymGetAll();
@@ -788,7 +790,7 @@ bool cUseOT::NymDisplayAll(bool dryrun) {
 const string cUseOT::NymGetDefault() {
 	if(!Init())
 		return "";
-	return mDefaultIDs.at("UserID");
+	return mDefaultIDs.at(nUtils::eSubjectType::User);
 }
 
 const string cUseOT::NymGetId(const string & nymName) { // Gets nym aliases and IDs begins with '^'
@@ -809,7 +811,7 @@ const string cUseOT::NymGetId(const string & nymName) { // Gets nym aliases and 
 
 bool cUseOT::NymDisplayInfo(const string & nymName, bool dryrun) {
 	_fact("nym info " << nymName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	cout << OTAPI_Wrap::GetNym_Stats( NymGetId(nymName) );
@@ -824,7 +826,7 @@ const string cUseOT::NymGetName(const string & nymID) {
 
 bool cUseOT::NymRefresh(const string & nymName, bool all, bool dryrun) { //TODO arguments for server, all servers
 	_fact("nym refresh " << nymName << " all?=" << all);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	OT_ME madeEasy;
@@ -881,7 +883,7 @@ bool cUseOT::NymRefresh(const string & nymName, bool all, bool dryrun) { //TODO 
 
 bool cUseOT::NymRegister(const string & nymName, const string & serverName, bool dryrun) {
 	_fact("nym register " << nymName << " on server " << serverName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	OT_ME madeEasy;
@@ -901,7 +903,7 @@ bool cUseOT::NymRegister(const string & nymName, const string & serverName, bool
 
 bool cUseOT::NymRemove(const string & nymName, bool dryrun) {
 	_fact("nym rm " << nymName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string nymID = NymGetId(nymName);
@@ -928,7 +930,7 @@ bool cUseOT::NymSetName(const string & nymID, const string & newNymName) { //TOD
 
 bool cUseOT::NymRename(const string & oldNymName, const string & newNymName, bool dryrun) {
 	_fact("nym rename from " << oldNymName << " to " << newNymName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	if( NymSetName(NymGetId(oldNymName), newNymName) ) {
@@ -941,16 +943,16 @@ bool cUseOT::NymRename(const string & oldNymName, const string & newNymName, boo
 
 bool cUseOT::NymSetDefault(const string & nymName, bool dryrun) {
 	_fact("nym set-default " << nymName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
-	mDefaultIDs.at("UserID") = NymGetId(nymName);
+	mDefaultIDs.at(nUtils::eSubjectType::User) = NymGetId(nymName);
 	return true;
 }
 
 bool cUseOT::ServerAdd(bool dryrun) {
 	_fact("server ls");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string contract;
@@ -967,7 +969,7 @@ bool cUseOT::ServerAdd(bool dryrun) {
 
 bool cUseOT::ServerCreate(const string & nymName, bool dryrun) {
 	_fact("server ls");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string xmlContents;
@@ -989,16 +991,16 @@ bool cUseOT::ServerCreate(const string & nymName, bool dryrun) {
 void cUseOT::ServerCheck() {
 	if(!Init()) return;
 
-	if( !OTAPI_Wrap::checkServerID( mDefaultIDs.at("ServerID"), mDefaultIDs.at("UserID") ) ) {
-		_erro( "No response from server: " + mDefaultIDs.at("ServerID") );
+	if( !OTAPI_Wrap::checkServerID( mDefaultIDs.at(nUtils::eSubjectType::Server), mDefaultIDs.at(nUtils::eSubjectType::User) ) ) {
+		_erro( "No response from server: " + mDefaultIDs.at(nUtils::eSubjectType::Server) );
 	}
-	_info("Server " + mDefaultIDs.at("ServerID") + " is OK");
+	_info("Server " + mDefaultIDs.at(nUtils::eSubjectType::Server) + " is OK");
 }
 
 const string cUseOT::ServerGetDefault() {
 	if(!Init())
 		return "";
-	return mDefaultIDs.at("ServerID");
+	return mDefaultIDs.at(nUtils::eSubjectType::Server);
 }
 
 const string cUseOT::ServerGetId(const string & serverName) { ///< Gets nym aliases and IDs begins with '%'
@@ -1026,7 +1028,7 @@ const string cUseOT::ServerGetName(const string & serverID){
 
 bool cUseOT::ServerRemove(const string & serverName, bool dryrun) {
 	_fact("server rm " << serverName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 	string serverID = ServerGetId(serverName);
 	if ( OTAPI_Wrap::Wallet_CanRemoveServer(serverID) ) {
@@ -1043,10 +1045,10 @@ bool cUseOT::ServerRemove(const string & serverName, bool dryrun) {
 
 bool cUseOT::ServerSetDefault(const string & serverName, bool dryrun) {
 	_fact("server set-default " << serverName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
-	mDefaultIDs.at("ServerID") = ServerGetId(serverName);
+	mDefaultIDs.at(nUtils::eSubjectType::Server) = ServerGetId(serverName);
 	return true;
 }
 
@@ -1064,7 +1066,7 @@ const vector<string> cUseOT::ServerGetAllNames() { ///< Gets all servers name
 
 bool cUseOT::ServerDisplayAll(bool dryrun) {
 	_fact("server ls");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 
@@ -1077,7 +1079,7 @@ bool cUseOT::ServerDisplayAll(bool dryrun) {
 
 bool cUseOT::TextEncode(const string & plainText, bool dryrun) {
 	_fact("text encode");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string plainTextIn;
@@ -1097,7 +1099,7 @@ bool cUseOT::TextEncode(const string & plainText, bool dryrun) {
 
 bool cUseOT::TextEncrypt(const string & recipientNymName, const string & plainText, bool dryrun) {
 	_fact("text encrypt to " << recipientNymName);
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string plainTextIn;
@@ -1116,7 +1118,7 @@ bool cUseOT::TextEncrypt(const string & recipientNymName, const string & plainTe
 
 bool cUseOT::TextDecode(const string & encodedText, bool dryrun) {
 	_fact("text decode");
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string encodedTextIn;
@@ -1136,7 +1138,7 @@ bool cUseOT::TextDecode(const string & encodedText, bool dryrun) {
 
 bool cUseOT::TextDecrypt(const string & recipientNymName, const string & encryptedText, bool dryrun) {
 	_fact("text decrypt for " << recipientNymName );
-	if(dryrun) return false;
+	if(dryrun) return true;
 	if(!Init()) return false;
 
 	string encryptedTextIn;
